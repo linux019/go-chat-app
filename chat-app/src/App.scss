@@ -7,9 +7,26 @@
     flex: 1;
     max-width: 300px;
     overflow-y: auto;
-    padding: 10px;
+    //padding: 25px;
+    display: flex;
+    flex-flow: column;
+    border-right: 1px solid #e0e0e0;
 
+    & > .card {
+      margin: 0;
+      & > .card-actions {
+        .materia-icons {
+          //font-size: 16px;
+        }
+      }
+    }
+
+    & > .collection {
+      margin-top: 0;
+      border: none;
+    }
   }
+
   & > .dialogue {
     flex: 1;
     padding: 25px;
