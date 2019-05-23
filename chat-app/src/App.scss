@@ -14,10 +14,10 @@
 
     & > .card {
       margin: 0;
-      & > .card-actions {
-        .materia-icons {
-          //font-size: 16px;
-        }
+
+      .status {
+        align-items: center;
+        display: flex;
       }
     }
 
@@ -30,6 +30,26 @@
   & > .dialogue {
     flex: 1;
     padding: 25px;
+
+    & > .chat {
+      background: #eee;
+      height: 100%;
+      overflow: hidden;
+      border-radius: 5px;
+      display: flex;
+      flex-flow: column;
+
+      & > .messages {
+        flex: 1;
+        //background: green;
+        overflow-y: auto;
+      }
+
+      & > .text-input {
+        border-top: 1px solid white;
+        padding: 25px;
+      }
+    }
   }
 }
 

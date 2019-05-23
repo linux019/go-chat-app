@@ -20,14 +20,14 @@ function App() {
                         <p>I am a very simple card</p>
                     </div>
                     <div className="card-action">
-                        <a href="#">
+                        <a href="#" className={'status'}>
                             <i className={'material-icons tiny'}>check_circle</i>
-                            This is a link</a>
+                            &nbsp;Connected</a>
                     </div>
                 </div>
 
                 <ul className="collection with-header">
-                    <li className="collection-header"><h6>First Names</h6></li>
+                    <li className="collection-header"><h6>Channels</h6></li>
                     <li className="collection-item">Alvin</li>
                     <li className="collection-item">Alvin</li>
                     <li className="collection-item">Alvin</li>
@@ -35,8 +35,16 @@ function App() {
                 </ul>
             </div>
             <div className="dialogue">
-                content
+                <div className={'chat'}>
+                    <div className={'messages'}>
+                    content
 
+                    </div>
+                    <div className={'text-input'}>
+                        <textarea></textarea>
+                        <button>Submit</button>
+                    </div>
+                </div>
             </div>
         </>
     );
