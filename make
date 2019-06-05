@@ -1,3 +1,5 @@
 #!/bin/sh
-GOPATH=export GOPATH=$(pwd)/go-chat-server
-#go list ./go-chat-server/src
+export GOPATH=$(pwd)/go-chat-server
+export GOBIN=$GOPATH/bin
+#go env
+go build org.freedom/main
