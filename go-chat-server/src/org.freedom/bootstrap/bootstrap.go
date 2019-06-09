@@ -36,7 +36,6 @@ var webSocketUpgrader = websocket.Upgrader{
 }
 
 func (h HttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
 	conn, err := webSocketUpgrader.Upgrade(w, r, nil)
 
 	//if r.Header.Get("Origin") != "http://"+r.Host {
@@ -50,44 +49,45 @@ func (h HttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	newSocketId := atomic.AddUint64(&ConnectionPool.connectionCounter, 1)
 	ConnectionPool.connections.Store(newSocketId, conn)
-
-	//worker := h.ApiHandlers[strings.ToLower(r.Method)]
-	//
-	//var response *[]byte = nil
-	//
-	//if worker != nil {
-	//	wsMessageType, wsBuffer, err := conn.ReadMessage()
-	//	if err != nil {
-	//		log.Println("read", wsMessageType, wsBuffer, err)
-	//	}
-	//
-	//	timeText, _ := time.Now().MarshalText()
-	//	response = &timeText
-	//	//_, response, err := worker(r)
-	//	//w.WriteHeader(status)
-	//	//if status == http.StatusOK {
-	//	//w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	//	//} else {
-	//	//w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	//	//}
-	//
-	//	if err != nil {
-	//		log.Println(err)
-	//	}
-	//
-	//	if response != nil && err == nil {
-	//		//_, _ = w.Write(*response)
-	//		log.Println("writing data")
-	//		err = conn.WriteMessage(websocket.TextMessage, *response)
-	//	} else {
-	//		log.Println("none")
-	//	}
-	//
-	//} else {
-	//	w.WriteHeader(http.StatusNotFound)
-	//	_, _ = w.Write([]byte("Invalid Endpoint"))
-	//}
+	go ReadSocket(conn)
 }
+
+//worker := h.ApiHandlers[strings.ToLower(r.Method)]
+//
+//var response *[]byte = nil
+//
+//if worker != nil {
+//	wsMessageType, wsBuffer, err := conn.ReadMessage()
+//	if err != nil {
+//		log.Println("read", wsMessageType, wsBuffer, err)
+//	}
+//
+//	timeText, _ := time.Now().MarshalText()
+//	response = &timeText
+//	//_, response, err := worker(r)
+//	//w.WriteHeader(status)
+//	//if status == http.StatusOK {
+//	//w.Header().Set("Content-Type", "application/json; charset=utf-8")
+//	//} else {
+//	//w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+//	//}
+//
+//	if err != nil {
+//		log.Println(err)
+//	}
+//
+//	if response != nil && err == nil {
+//		//_, _ = w.Write(*response)
+//		log.Println("writing data")
+//		err = conn.WriteMessage(websocket.TextMessage, *response)
+//	} else {
+//		log.Println("none")
+//	}
+//
+//} else {
+//	w.WriteHeader(http.StatusNotFound)
+//	_, _ = w.Write([]byte("Invalid Endpoint"))
+//}
 
 func ListenForSignals() {
 	OsSignal = <-signals

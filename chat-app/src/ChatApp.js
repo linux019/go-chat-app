@@ -48,7 +48,8 @@ class ChatApp extends React.Component {
         this.timeoutID = null;
 
 
-        this.getChannels();
+        this.setName();
+        // this.getChannels();
     };
 
     onConnectionClose = reconnect => {
@@ -59,7 +60,10 @@ class ChatApp extends React.Component {
         }
     };
 
-    getChannels = () => this.socket.send('GET_CHANNELS');
+    getChannels = () => this.sendCommand('GET_CHANNELS', null);
+    setName = () => this.sendCommand('SET_NAME', this.props.userName);
+
+    sendCommand = (command, data) => this.socket.send(JSON.stringify({data, command}));
 
     componentWillUnmount() {
         this.socket.close();

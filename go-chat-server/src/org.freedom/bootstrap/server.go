@@ -1,8 +1,10 @@
 package bootstrap
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"reflect"
 	"sync"
 	"time"
 )
@@ -14,7 +16,7 @@ var ConnectionPool struct {
 }
 
 func CheckKeepAliveSockets() {
-	step := 0;
+	step := 0
 	for {
 		_ = <-time.After(time.Second * 1)
 		step++
@@ -34,6 +36,29 @@ func CheckKeepAliveSockets() {
 				}
 				return true
 			})
+		}
+	}
+}
+
+func ReadSocket(conn *websocket.Conn) {
+	for {
+		messageType, data, err := conn.ReadMessage()
+		if err != nil {
+			break
+		}
+		if (messageType == websocket.BinaryMessage || messageType == websocket.TextMessage) && data != nil {
+			var v interface{}
+			err := json.Unmarshal(data, &v)
+			if err == nil && reflect.ValueOf(v).Kind() == reflect.Map {
+				command, exists := v.(map[string]interface{})["command"]
+				if !exists {
+					continue
+				}
+				commandData, exists := v.(map[string]interface{})["data"]
+				if exists {
+					fmt.Println(command, commandData)
+				}
+			}
 		}
 	}
 }
