@@ -3,6 +3,18 @@
   overflow: hidden;
   display: flex;
 
+  select {
+    display: block;
+  }
+
+
+  .rotate {
+    animation-name: spin;
+    animation-duration: 1000ms;
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+  }
+
   & > .sidebar {
     flex: 1;
     max-width: 300px;
@@ -53,3 +65,10 @@
   }
 }
 
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  } to {
+      transform: rotate(360deg);
+    }
+}

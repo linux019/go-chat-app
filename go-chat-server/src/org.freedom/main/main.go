@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	bootstrap.Setup()
+	bootstrap.StartHttpServer()
 	chatapi.Setup()
 	bootstrap.ListenForSignals()
 }

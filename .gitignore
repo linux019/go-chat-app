@@ -19,4 +19,5 @@ yarn-error.log*
 package-lock.json
 /go-chat-server/bin
 /go-chat-server/pkg
+/go-chat-server/src/github.com
 

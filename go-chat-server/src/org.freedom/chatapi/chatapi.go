@@ -9,23 +9,30 @@ import (
 	"time"
 )
 
-var channelsHandlers = bootstrap.HttpHandler{
-	ApiHandlers: map[string]bootstrap.ApiHandler{
-		"get":  listChannels,
-		"post": addChannel,
-	},
-}
+//var channelsHandlers = bootstrap.HttpHandler{
+//	ApiHandlers: map[string]bootstrap.ApiHandler{
+//		"get":  listChannels,
+//		"post": addChannel,
+//	},
+//}
 
-var messagesHandlers = bootstrap.HttpHandler{
+//var messagesHandlers = bootstrap.HttpHandler{
+//	ApiHandlers: map[string]bootstrap.ApiHandler{
+//		"get":  getChannelHistory,
+//		"post": storeMessage,
+//	},
+//}
+
+var wsHandlers = bootstrap.HttpHandler{
 	ApiHandlers: map[string]bootstrap.ApiHandler{
-		"get":  getChannelHistory,
-		"post": storeMessage,
+		"get": wsHandler,
 	},
 }
 
 func Setup() {
-	bootstrap.AddEndPoints("/channels", &channelsHandlers)
-	bootstrap.AddEndPoints("/messages", &messagesHandlers)
+	//bootstrap.AddEndPoints("/channels", &channelsHandlers)
+	//bootstrap.AddEndPoints("/messages", &messagesHandlers)
+	bootstrap.AddEndPoints("/ws", &wsHandlers)
 }
 
 type Channels struct {
@@ -112,5 +119,10 @@ func getChannelHistory(r *http.Request) (status int, response *[]byte, e error) 
 	}
 
 	body, _ := json.Marshal(&messages)
+	return http.StatusOK, &body, nil
+}
+
+func wsHandler(r *http.Request) (status int, response *[]byte, e error) {
+	var body = []byte("PONG")
 	return http.StatusOK, &body, nil
 }
