@@ -13,9 +13,9 @@ var ConnectionPool struct {
 	connections       sync.Map
 }
 
-var serverCommandListeners map[string]func(interface{}) interface{}
+var serverCommandListeners = make(map[string]func(data interface{}) interface{})
 
-func AddCommandListener(command string, f func(interface{}) interface{}) {
+func AddCommandListener(command string, f func(data interface{}) interface{}) {
 	serverCommandListeners[command] = f
 }
 
@@ -54,15 +54,24 @@ func ReadSocket(conn *websocket.Conn) {
 			var v interface{}
 			err := json.Unmarshal(data, &v)
 			if err == nil {
-				jsonMap, success := v.(map[string])
+				jsonMap, success := v.(map[string]interface{})
 				if jsonMap != nil && success {
-					command, exists := jsonMap["command"]
-					if !exists {
+					command, result := jsonMap["command"]
+					if !result {
 						continue
 					}
-					commandData, exists := jsonMap["data"]
-					if exists {
-						fmt.Println(command, commandData)
+					stringCommand, result := command.(string)
+					if !result {
+						continue
+					}
+					commandData, result := jsonMap["data"]
+					if !result {
+						continue
+					}
+
+					cmdHandler, result := serverCommandListeners[stringCommand]
+					if result {
+						cmdHandler(commandData)
 					}
 				}
 			}

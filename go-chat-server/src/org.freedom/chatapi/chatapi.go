@@ -54,8 +54,9 @@ type channelMessage struct {
 	Message string `json:"message"`
 }
 
-func commandSetUserName(data interface{}) interface{}  {
-
+func commandSetUserName(data interface{}) interface{} {
+	println(data)
+	return nil
 }
 
 var chatMessagesHistory = make(map[string][]channelMessage)
