@@ -4,15 +4,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
-	"reflect"
 	"sync"
 	"time"
 )
 
 var ConnectionPool struct {
-	//mutex             sync.Mutex
 	connectionCounter uint64
 	connections       sync.Map
+}
+
+var serverCommandListeners map[string]func(interface{}) interface{}
+
+func AddCommandListener(command string, f func(interface{}) interface{}) {
+	serverCommandListeners[command] = f
 }
 
 func CheckKeepAliveSockets() {
@@ -49,14 +53,17 @@ func ReadSocket(conn *websocket.Conn) {
 		if (messageType == websocket.BinaryMessage || messageType == websocket.TextMessage) && data != nil {
 			var v interface{}
 			err := json.Unmarshal(data, &v)
-			if err == nil && reflect.ValueOf(v).Kind() == reflect.Map {
-				command, exists := v.(map[string]interface{})["command"]
-				if !exists {
-					continue
-				}
-				commandData, exists := v.(map[string]interface{})["data"]
-				if exists {
-					fmt.Println(command, commandData)
+			if err == nil {
+				jsonMap, success := v.(map[string])
+				if jsonMap != nil && success {
+					command, exists := jsonMap["command"]
+					if !exists {
+						continue
+					}
+					commandData, exists := jsonMap["data"]
+					if exists {
+						fmt.Println(command, commandData)
+					}
 				}
 			}
 		}

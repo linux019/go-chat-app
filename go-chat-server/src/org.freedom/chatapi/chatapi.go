@@ -33,6 +33,7 @@ func Setup() {
 	//bootstrap.AddEndPoints("/channels", &channelsHandlers)
 	//bootstrap.AddEndPoints("/messages", &messagesHandlers)
 	bootstrap.AddEndPoints("/ws", &wsHandlers)
+	bootstrap.AddCommandListener("SET_USERNAME", commandSetUserName)
 }
 
 type Channels struct {
@@ -53,7 +54,9 @@ type channelMessage struct {
 	Message string `json:"message"`
 }
 
-//type Messages []channelMessage
+func commandSetUserName(data interface{}) interface{}  {
+
+}
 
 var chatMessagesHistory = make(map[string][]channelMessage)
 
