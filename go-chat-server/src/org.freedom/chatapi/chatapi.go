@@ -1,27 +1,10 @@
 package chatapi
 
 import (
-	"encoding/json"
-	"fmt"
 	"net/http"
 	"org.freedom/bootstrap"
 	"sync"
-	"time"
 )
-
-//var channelsHandlers = bootstrap.HttpHandler{
-//	ApiHandlers: map[string]bootstrap.ApiHandler{
-//		"get":  listChannels,
-//		"post": addChannel,
-//	},
-//}
-
-//var messagesHandlers = bootstrap.HttpHandler{
-//	ApiHandlers: map[string]bootstrap.ApiHandler{
-//		"get":  getChannelHistory,
-//		"post": storeMessage,
-//	},
-//}
 
 var wsHandlers = bootstrap.HttpHandler{
 	ApiHandlers: map[string]bootstrap.ApiHandler{
@@ -29,12 +12,6 @@ var wsHandlers = bootstrap.HttpHandler{
 	},
 }
 
-func Setup() {
-	//bootstrap.AddEndPoints("/channels", &channelsHandlers)
-	//bootstrap.AddEndPoints("/messages", &messagesHandlers)
-	bootstrap.AddEndPoints("/ws", &wsHandlers)
-	bootstrap.AddCommandListener("SET_USERNAME", commandSetUserName)
-}
 
 type Channels struct {
 	mutex    sync.Mutex
@@ -54,14 +31,14 @@ type channelMessage struct {
 	Message string `json:"message"`
 }
 
-func commandSetUserName(data interface{}) interface{} {
-	println(data)
-	return nil
-}
-
 var chatMessagesHistory = make(map[string][]channelMessage)
 
-func listChannels(r *http.Request) (status int, response *[]byte, e error) {
+func Setup() {
+	bootstrap.AddEndPoints("/ws", &wsHandlers)
+	bootstrap.AddCommandListener("SET_USERNAME", commandSetUserName)
+}
+
+/*func listChannels(r *http.Request) (status int, response *[]byte, e error) {
 	channelsList.mutex.Lock()
 	defer channelsList.mutex.Unlock()
 
@@ -125,7 +102,7 @@ func getChannelHistory(r *http.Request) (status int, response *[]byte, e error) 
 	body, _ := json.Marshal(&messages)
 	return http.StatusOK, &body, nil
 }
-
+*/
 func wsHandler(r *http.Request) (status int, response *[]byte, e error) {
 	var body = []byte("PONG")
 	return http.StatusOK, &body, nil

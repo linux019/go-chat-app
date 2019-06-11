@@ -13,9 +13,15 @@ var ConnectionPool struct {
 	connections       sync.Map
 }
 
-var serverCommandListeners = make(map[string]func(data interface{}) interface{})
+//var UserConnections  = struct {
+//
+//}{}make(map[string][]websocket.Conn)
 
-func AddCommandListener(command string, f func(data interface{}) interface{}) {
+type CommandListener func(data interface{}) interface{}
+
+var serverCommandListeners = make(map[string]CommandListener)
+
+func AddCommandListener(command string, f CommandListener) {
 	serverCommandListeners[command] = f
 }
 
