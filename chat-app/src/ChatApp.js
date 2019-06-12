@@ -8,8 +8,13 @@ const serverAddress = 'ws://localhost:4488/ws';
 
 class ChatApp extends React.Component {
     state = {
+        activeChannel: null,
         connected: false,
         channels: [],
+    };
+
+    static propTypes = {
+        userName: PropTypes.string.isRequired
     };
 
     componentDidMount() {
@@ -32,8 +37,16 @@ class ChatApp extends React.Component {
             this.onConnectionClose(reconnect);
         };
 
-        socket.onmessage = function (event) {
-            console.log('DATA', event.data)
+        socket.onmessage = event => {
+            console.log('DATA', event.data);
+            try {
+                const data = JSON.parse(event.data);
+                if (data) {
+                    this.onServerData(data);
+                }
+            } catch (e) {
+
+            }
         };
 
         socket.onerror = function (error) {
@@ -65,6 +78,20 @@ class ChatApp extends React.Component {
 
     sendCommand = (command, data) => this.socket.send(JSON.stringify({data, command}));
 
+    onServerData = data => {
+        const newState = {};
+        if (data.channels) {
+            newState.channels = data.channels;
+            if (!this.state.activeChannel) {
+                newState.activeChannel = data.channels[0];
+            }
+        }
+
+        if (Object.keys(newState).length) {
+            this.setState(newState);
+        }
+    };
+
     componentWillUnmount() {
         this.socket.close();
         this.socket = null;
@@ -73,15 +100,14 @@ class ChatApp extends React.Component {
         }
     }
 
-    static propTypes = {
-        userName: PropTypes.string.isRequired
-    };
+    setActiveChannel = activeChannel => this.setState({activeChannel});
 
     render() {
         const {userName} = this.props;
-        const {channels, connected} = this.state;
+        const {channels, connected, activeChannel} = this.state;
         return (
-            <DataContext.Provider value={{userName, connected}}>
+            <DataContext.Provider
+                value={{userName, connected, channels, activeChannel, setActiveChannel: this.setActiveChannel}}>
                 <Sidebar/>
                 <ChatDialogue/>
             </DataContext.Provider>

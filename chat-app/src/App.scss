@@ -36,6 +36,20 @@
     & > .collection {
       margin-top: 0;
       border: none;
+
+      & > li.collection-item {
+        cursor: pointer;
+        font-weight: 300;
+
+        &:hover {
+          background: #a9a9a9;
+        }
+
+        &.active {
+          background: #5a7a94;
+          font-weight: 600;
+        }
+      }
     }
   }
 
@@ -68,7 +82,8 @@
 @keyframes spin {
   from {
     transform: rotate(0deg);
-  } to {
-      transform: rotate(360deg);
-    }
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }

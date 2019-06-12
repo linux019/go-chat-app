@@ -10,14 +10,12 @@ import (
 
 var ConnectionPool struct {
 	connectionCounter uint64
-	connections       sync.Map
+	connections       sync.Map //connId:websocket.Conn
 }
 
-//var UserConnections  = struct {
-//
-//}{}make(map[string][]websocket.Conn)
+var UserConnections = make(map[*websocket.Conn]string)
 
-type CommandListener func(data interface{}) interface{}
+type CommandListener func(conn *websocket.Conn, data interface{}) interface{}
 
 var serverCommandListeners = make(map[string]CommandListener)
 
@@ -42,6 +40,7 @@ func CheckKeepAliveSockets() {
 				if err != nil {
 					_ = conn.Close()
 					ConnectionPool.connections.Delete(connId)
+					delete(UserConnections, conn)
 					fmt.Printf("Disconnecting %v\n", connId)
 				}
 				return true
@@ -77,7 +76,13 @@ func ReadSocket(conn *websocket.Conn) {
 
 					cmdHandler, result := serverCommandListeners[stringCommand]
 					if result {
-						cmdHandler(commandData)
+						response := cmdHandler(conn, commandData)
+						if response != nil {
+							jsonValue, err := json.Marshal(response)
+							if err == nil {
+								_ = conn.WriteMessage(websocket.TextMessage, jsonValue)
+							}
+						}
 					}
 				}
 			}

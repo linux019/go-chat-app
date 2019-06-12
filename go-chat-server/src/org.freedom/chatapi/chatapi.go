@@ -12,8 +12,7 @@ var wsHandlers = bootstrap.HttpHandler{
 	},
 }
 
-
-type Channels struct {
+type ChannelsList struct {
 	mutex    sync.Mutex
 	channels map[string]bool
 }
@@ -22,38 +21,33 @@ type channelsJSON struct {
 	Channels *[]string `json:"channels"`
 }
 
-var channelsList = Channels{
-	channels: map[string]bool{"general": true},
+type messagesJSON struct {
+	Messages *[]channelMessage `json:"messages"`
+}
+
+var channelsList = ChannelsList{
+	channels: map[string]bool{
+		"general": true,
+		"news":    true,
+	},
 }
 
 type channelMessage struct {
 	Time    int64  `json:"time"`
 	Message string `json:"message"`
+	Sender  string `json:"sender"`
 }
 
-var chatMessagesHistory = make(map[string][]channelMessage)
+var channelMessages = make(map[string][]channelMessage)
 
 func Setup() {
 	bootstrap.AddEndPoints("/ws", &wsHandlers)
 	bootstrap.AddCommandListener("SET_USERNAME", commandSetUserName)
+	bootstrap.AddCommandListener("GET_CHANNELS", commandListChannels)
+	bootstrap.AddCommandListener("GET_CHANNEL_MESSAGES", commandListChannelMessages)
 }
 
-/*func listChannels(r *http.Request) (status int, response *[]byte, e error) {
-	channelsList.mutex.Lock()
-	defer channelsList.mutex.Unlock()
-
-	names := make([]string, 0)
-	for name := range channelsList.channels {
-		names = append(names, name)
-	}
-	channelsResponse := channelsJSON{
-		Channels: &names,
-	}
-	body, _ := json.Marshal(&channelsResponse)
-
-	return http.StatusOK, &body, nil
-}
-
+/*
 func addChannel(r *http.Request) (status int, response *[]byte, e error) {
 	name := r.FormValue("name")
 	if len(name) > 0 && len(name) < 255 {
@@ -88,20 +82,6 @@ func storeMessage(r *http.Request) (status int, response *[]byte, e error) {
 	return http.StatusBadRequest, nil, nil
 }
 
-func getChannelHistory(r *http.Request) (status int, response *[]byte, e error) {
-	channel, ok := r.URL.Query()["channel"]
-	if !ok {
-		return http.StatusBadRequest, nil, nil
-	}
-	messages, ok := chatMessagesHistory[channel[0]]
-
-	if !ok {
-		return http.StatusNotFound, nil, nil
-	}
-
-	body, _ := json.Marshal(&messages)
-	return http.StatusOK, &body, nil
-}
 */
 func wsHandler(r *http.Request) (status int, response *[]byte, e error) {
 	var body = []byte("PONG")
