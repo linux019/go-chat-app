@@ -91,18 +91,3 @@ export const Sidebar = () => (
     </DataContext.Consumer>
 
 );
-
-export const ChatDialogue = () => {
-    return <div className="dialogue">
-        <div className={'chat'}>
-            <div className={'messages'}>
-                content
-
-            </div>
-            <div className={'text-input'}>
-                <textarea></textarea>
-                <button>Submit</button>
-            </div>
-        </div>
-    </div>
-};

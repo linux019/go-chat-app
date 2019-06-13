@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 )
+type CommandListener func(conn *websocket.Conn, data interface{}) interface{}
 
 var ConnectionPool struct {
 	connectionCounter uint64
@@ -14,10 +15,8 @@ var ConnectionPool struct {
 }
 
 var UserConnections = make(map[*websocket.Conn]string)
-
-type CommandListener func(conn *websocket.Conn, data interface{}) interface{}
-
 var serverCommandListeners = make(map[string]CommandListener)
+
 
 func AddCommandListener(command string, f CommandListener) {
 	serverCommandListeners[command] = f

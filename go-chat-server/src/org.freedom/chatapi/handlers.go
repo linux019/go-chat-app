@@ -43,3 +43,26 @@ var commandListChannelMessages bootstrap.CommandListener = func(conn *websocket.
 
 	return nil
 }
+
+var commandStoreUserMessage bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
+	/*name := r.FormValue("name")
+	text := r.FormValue("text")
+	if len(name) > 0 && len(text) > 0 {
+		channelsList.mutex.Lock()
+		defer channelsList.mutex.Unlock()
+		_, ok := channelsList.channels[name]
+
+		if ok {
+			var newMessage = channelMessage{Message: text, Time: time.Now().Unix()}
+			channelHistory, exists := chatMessagesHistory[name]
+			if !exists {
+				fmt.Println(channelHistory)
+				channelHistory = make([]channelMessage, 0, 1)
+			}
+			channelHistory = append(channelHistory, newMessage)
+			chatMessagesHistory[name] = channelHistory
+			return http.StatusOK, nil, nil
+		}
+	}*/
+	return nil
+}

@@ -1,10 +1,11 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import {serverAddress} from './App';
+import ChatDialogue from './ChatDialogue';
 
-import {ChatDialogue, Sidebar} from './items';
+import {Sidebar} from './items';
 
 export const DataContext = React.createContext({});
-const serverAddress = 'ws://localhost:4488/ws';
 
 class ChatApp extends React.Component {
     state = {
@@ -16,6 +17,11 @@ class ChatApp extends React.Component {
     static propTypes = {
         userName: PropTypes.string.isRequired
     };
+
+    constructor(props) {
+        super(props);
+        this.dialogueCallback = null;
+    }
 
     componentDidMount() {
         this.openServerConnection();
@@ -87,6 +93,10 @@ class ChatApp extends React.Component {
             }
         }
 
+        if (data.messages && this.dialogueCallback) {
+            this.dialogueCallback(data.messages);
+        }
+
         if (Object.keys(newState).length) {
             this.setState(newState);
         }
@@ -101,6 +111,12 @@ class ChatApp extends React.Component {
     }
 
     setActiveChannel = activeChannel => this.setState({activeChannel});
+    setDialogueCallback = callback => {
+        this.dialogueCallback = callback;
+        this.sendCommand('GET_CHANNEL_MESSAGES', this.state.activeChannel);
+    };
+
+    sendUserMessage = message => this.sendCommand('POST_MESSAGE', {channel: this.state.activeChannel, message});
 
     render() {
         const {userName} = this.props;
@@ -109,7 +125,14 @@ class ChatApp extends React.Component {
             <DataContext.Provider
                 value={{userName, connected, channels, activeChannel, setActiveChannel: this.setActiveChannel}}>
                 <Sidebar/>
-                <ChatDialogue/>
+                {
+                    activeChannel &&
+                    <ChatDialogue key={activeChannel}
+                                  activeChannel={activeChannel}
+                                  setCallback={this.setDialogueCallback}
+                                  sendUserMessage={this.sendUserMessage}
+                    />
+                }
             </DataContext.Provider>
         )
     }
