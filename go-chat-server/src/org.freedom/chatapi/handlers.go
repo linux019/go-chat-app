@@ -1,8 +1,10 @@
 package chatapi
 
 import (
+	"fmt"
 	"github.com/gorilla/websocket"
 	"org.freedom/bootstrap"
+	"time"
 )
 
 var commandSetUserName bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
@@ -32,7 +34,7 @@ var commandListChannelMessages bootstrap.CommandListener = func(conn *websocket.
 	if !success {
 		return nil
 	}
-	messages, ok := channelMessages[channel]
+	messages, ok := channelMessages.messages[channel]
 
 	if ok {
 		return messagesJSON{
@@ -45,24 +47,45 @@ var commandListChannelMessages bootstrap.CommandListener = func(conn *websocket.
 }
 
 var commandStoreUserMessage bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
-	/*name := r.FormValue("name")
-	text := r.FormValue("text")
-	if len(name) > 0 && len(text) > 0 {
-		channelsList.mutex.Lock()
-		defer channelsList.mutex.Unlock()
-		_, ok := channelsList.channels[name]
-
-		if ok {
-			var newMessage = channelMessage{Message: text, Time: time.Now().Unix()}
-			channelHistory, exists := chatMessagesHistory[name]
-			if !exists {
-				fmt.Println(channelHistory)
-				channelHistory = make([]channelMessage, 0, 1)
-			}
-			channelHistory = append(channelHistory, newMessage)
-			chatMessagesHistory[name] = channelHistory
-			return http.StatusOK, nil, nil
+	valueMap, success := data.(map[string]interface{})
+	if !success {
+		return nil
+	}
+	channel, exists := valueMap["channel"]
+	if exists {
+		channelName, success := channel.(string)
+		if !success {
+			return nil
 		}
-	}*/
+		message, exists := valueMap["message"]
+		fmt.Println(message, exists)
+
+		if len(channelName) > 0 && len(message.(string)) > 0 {
+			_, exists := channelsList.channels[channelName]
+
+			if exists {
+				var user, _ = bootstrap.UserConnections[conn]
+				if exists {
+					var newMessage = channelMessage{
+						Message: message.(string),
+						Time:    time.Now().Unix(),
+						Sender:  user,
+					}
+					channelMessages.mutex.Lock()
+					defer channelMessages.mutex.Unlock()
+
+					channelsMessagesArray, _ := channelMessages.messages[channelName]
+					if channelsMessagesArray == nil {
+						channelsMessagesArray = make([]channelMessage, 0, 1)
+					}
+					channelsMessagesArray = append(channelsMessagesArray, newMessage)
+					channelMessages.messages[channelName] = channelsMessagesArray
+					return commandListChannelMessages(conn, channelName)
+				}
+
+			}
+		}
+	}
+
 	return nil
 }

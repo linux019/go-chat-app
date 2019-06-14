@@ -67,13 +67,44 @@
 
       & > .messages {
         flex: 1;
-        //background: green;
         overflow-y: auto;
+
+        & > .message {
+          margin: 25px;
+
+          & > .text {
+            background: white;
+            padding: 0.5rem .75rem;
+            display: inline-block;
+            border-radius: 7px;
+          }
+
+          & > .header {
+            font-size: .9rem;
+            margin-bottom: .25rem;
+
+            & > .time {
+              font-weight: 300;
+              margin-left: 1rem;
+            }
+
+            & > .sender {
+              font-weight: bold;
+            }
+          }
+
+        }
       }
 
       & > .text-input {
         border-top: 1px solid white;
         padding: 25px;
+
+        & > textarea {
+          background-color: white;
+          border-radius: 5px;
+          border: 1px solid #ccc;
+        }
       }
     }
   }

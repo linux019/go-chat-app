@@ -82,7 +82,7 @@ class ChatApp extends React.Component {
     getChannels = () => this.sendCommand('GET_CHANNELS', null);
     setName = () => this.sendCommand('SET_USERNAME', this.props.userName);
 
-    sendCommand = (command, data) => this.socket.send(JSON.stringify({data, command}));
+    sendCommand = (command, data) => this.socket && this.socket.send(JSON.stringify({data, command}));
 
     onServerData = data => {
         const newState = {};

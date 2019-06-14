@@ -1,3 +1,4 @@
+import moment from 'moment';
 import React from 'react';
 import PropTypes from 'prop-types';
 
@@ -25,11 +26,11 @@ class ChatDialogue extends React.Component {
 
     onTextChange = e => this.setState({text: e.target.value});
 
-
     onSubmit = e => {
         e.preventDefault();
         e.stopPropagation();
-        this.props.sendUserMessage({message: this.state.text});
+        this.props.sendUserMessage(this.state.text);
+        this.setState({text: ''});
     };
 
     render() {
@@ -39,7 +40,10 @@ class ChatDialogue extends React.Component {
                 <div className={'chat'}>
                     <div className={'messages'}>
                         {
-                            messages.length > 0 ? '' : <p className={'center'}>No messages yet</p>
+                            messages.length > 0
+                                ? messages.map(message =>
+                                    <ChatMessage key={`${message.sender}-${message.time}`} {...message}/>)
+                                : <p className={'center'}>No messages yet</p>
                         }
                     </div>
                     <div className={'text-input'}>
@@ -53,5 +57,29 @@ class ChatDialogue extends React.Component {
         )
     }
 }
+
+function dateFormat(unixtime) {
+    const msgDate = new Date();
+    msgDate.setTime(unixtime * 1000);
+    const isSame = msgDate.getFullYear() === new Date().getFullYear();
+    const momentDate = moment.unix(unixtime);
+    const format = {
+        sameDay: 'h:mm A',
+        lastDay: '[Yesterday], h:mm A',
+        lastWeek: 'MMM D, h:mm A',
+        sameElse: 'MMM D, h:mm A'
+    };
+    return isSame ? momentDate.calendar(null, format) : momentDate.format('MMM D, YYYY h:mm A');
+}
+
+const ChatMessage = ({time, sender, message}) => (
+    <div className='message'>
+        <div className='header'>
+            <span className='sender'>{sender}</span>
+            <span className='time'>{dateFormat(time)}</span>
+        </div>
+        <div className='text'>{message}</div>
+    </div>
+);
 
 export default ChatDialogue

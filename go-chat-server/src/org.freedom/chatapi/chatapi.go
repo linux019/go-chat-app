@@ -38,7 +38,15 @@ type channelMessage struct {
 	Sender  string `json:"sender"`
 }
 
-var channelMessages = make(map[string][]channelMessage)
+type channelsMessagesMap map[string][]channelMessage
+type channelMessagesHistory struct {
+	mutex    sync.Mutex
+	messages channelsMessagesMap
+}
+
+var channelMessages = channelMessagesHistory{
+	messages: make(channelsMessagesMap, 0),
+}
 
 func Setup() {
 	bootstrap.AddEndPoints("/ws", &wsHandlers)
