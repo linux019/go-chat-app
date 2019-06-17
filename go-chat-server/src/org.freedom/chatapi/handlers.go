@@ -40,7 +40,6 @@ var commandListChannelMessages bootstrap.CommandListener = func(conn *websocket.
 		return messagesJSON{
 			Messages: &messages,
 		}
-
 	}
 
 	return nil
@@ -88,4 +87,16 @@ var commandStoreUserMessage bootstrap.CommandListener = func(conn *websocket.Con
 	}
 
 	return nil
+}
+
+var commandCreateChannel bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
+	name, result := data.(string)
+
+	if result {
+		channelsList.mutex.Lock()
+		channelsList.channels[name] = struct{}{}
+		channelsList.mutex.Unlock()
+	}
+
+	return commandListChannels(conn, nil)
 }

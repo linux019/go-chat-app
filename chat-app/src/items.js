@@ -51,14 +51,14 @@ export const WelcomeScreen = ({name, setData}) => (
 export const Sidebar = () => (
     <DataContext.Consumer>
         {
-            ({userName, connected, channels, activeChannel, setActiveChannel}) => (
+            ({userName, connected, channels, activeChannel, askForChannelName, setActiveChannel}) => (
                 <div className='sidebar'>
                     <div className="card blue-grey darken-1">
                         <div className="card-content white-text">
                             <span className="card-title">{userName}</span>
                         </div>
                         <div className="card-action">
-                            <a href="#0" className={'status'}>
+                            <a href="#0" className='status'>
                                 {
                                     connected
                                         ? <i className='material-icons tiny'>check_circle</i>
@@ -67,6 +67,16 @@ export const Sidebar = () => (
                                 &nbsp;Connect{connected ? 'ed' : 'ing...'}</a>
                         </div>
                     </div>
+
+                    {
+                        connected &&
+                        <a className="waves-effect waves-light btn-small new-channel"
+                           href='#0'
+                           onClick={askForChannelName}>
+                            <i className="material-icons left">control_point</i>
+                            Create channel
+                        </a>
+                    }
 
                     <ul className="collection with-header">
                         <li className="collection-header"><h6>Channels</h6></li>

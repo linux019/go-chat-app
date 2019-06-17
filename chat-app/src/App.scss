@@ -24,6 +24,10 @@
     flex-flow: column;
     border-right: 1px solid #e0e0e0;
 
+    .new-channel {
+      margin: 1rem auto;
+    }
+
     & > .card {
       margin: 0;
 

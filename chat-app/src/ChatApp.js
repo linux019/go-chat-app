@@ -81,6 +81,7 @@ class ChatApp extends React.Component {
 
     getChannels = () => this.sendCommand('GET_CHANNELS', null);
     setName = () => this.sendCommand('SET_USERNAME', this.props.userName);
+    createChannel = channel => this.sendCommand('CREATE_CHANNEL', channel);
 
     sendCommand = (command, data) => this.socket && this.socket.send(JSON.stringify({data, command}));
 
@@ -118,12 +119,26 @@ class ChatApp extends React.Component {
 
     sendUserMessage = message => this.sendCommand('POST_MESSAGE', {channel: this.state.activeChannel, message});
 
+    askForChannelName = e => {
+        e.preventDefault();
+        e.stopPropagation();
+        const channel = window.prompt('Type a channel name');
+        if (channel && channel.trim().length) {
+            this.createChannel(channel);
+        }
+    };
+
     render() {
         const {userName} = this.props;
         const {channels, connected, activeChannel} = this.state;
+        const contextData = {
+            userName, connected, channels, activeChannel,
+            askForChannelName: this.askForChannelName,
+            setActiveChannel: this.setActiveChannel,
+        };
         return (
             <DataContext.Provider
-                value={{userName, connected, channels, activeChannel, setActiveChannel: this.setActiveChannel}}>
+                value={contextData}>
                 <Sidebar/>
                 {
                     activeChannel &&

@@ -14,7 +14,7 @@ var wsHandlers = bootstrap.HttpHandler{
 
 type ChannelsList struct {
 	mutex    sync.Mutex
-	channels map[string]bool
+	channels map[string]struct{}
 }
 
 type channelsJSON struct {
@@ -26,9 +26,9 @@ type messagesJSON struct {
 }
 
 var channelsList = ChannelsList{
-	channels: map[string]bool{
-		"general": true,
-		"news":    true,
+	channels: map[string]struct{}{
+		"general": {},
+		"news":    {},
 	},
 }
 
@@ -54,22 +54,9 @@ func Setup() {
 	bootstrap.AddCommandListener("GET_CHANNELS", commandListChannels)
 	bootstrap.AddCommandListener("GET_CHANNEL_MESSAGES", commandListChannelMessages)
 	bootstrap.AddCommandListener("POST_MESSAGE", commandStoreUserMessage)
+	bootstrap.AddCommandListener("CREATE_CHANNEL", commandCreateChannel)
 }
 
-/*
-func addChannel(r *http.Request) (status int, response *[]byte, e error) {
-	name := r.FormValue("name")
-	if len(name) > 0 && len(name) < 255 {
-		channelsList.mutex.Lock()
-		channelsList.channels[name] = true
-		channelsList.mutex.Unlock()
-		return listChannels(r)
-	}
-	return http.StatusBadRequest, nil, nil
-}
-
-
-*/
 func wsHandler(r *http.Request) (status int, response *[]byte, e error) {
 	var body = []byte("PONG")
 	return http.StatusOK, &body, nil
