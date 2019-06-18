@@ -10,7 +10,7 @@ import (
 var commandSetUserName bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
 	name, result := data.(string)
 	if result {
-		bootstrap.UserConnections[conn] = name
+		bootstrap.UserConnections.StoreString(conn, name)
 	}
 	return commandListChannels(conn, nil)
 }
@@ -63,12 +63,12 @@ var commandStoreUserMessage bootstrap.CommandListener = func(conn *websocket.Con
 			_, exists := channelsList.channels[channelName]
 
 			if exists {
-				var user, _ = bootstrap.UserConnections[conn]
+				var user, _ = bootstrap.UserConnections.Load(conn)
 				if exists {
 					var newMessage = channelMessage{
 						Message: message.(string),
 						Time:    time.Now().Unix(),
-						Sender:  user,
+						Sender:  user.(string),
 					}
 					channelMessages.mutex.Lock()
 					defer channelMessages.mutex.Unlock()

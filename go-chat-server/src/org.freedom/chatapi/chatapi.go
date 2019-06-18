@@ -61,3 +61,7 @@ func wsHandler(r *http.Request) (status int, response *[]byte, e error) {
 	var body = []byte("PONG")
 	return http.StatusOK, &body, nil
 }
+
+func dispatchMessage() {
+
+}

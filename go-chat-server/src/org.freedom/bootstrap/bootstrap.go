@@ -8,7 +8,6 @@ import (
 	"org.freedom/constants"
 	"os"
 	"os/signal"
-	"sync/atomic"
 	"syscall"
 )
 
@@ -38,17 +37,11 @@ var webSocketUpgrader = websocket.Upgrader{
 func (h HttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	conn, err := webSocketUpgrader.Upgrade(w, r, nil)
 
-	//if r.Header.Get("Origin") != "http://"+r.Host {
-	//	http.Error(w, "Origin not allowed", http.StatusForbidden)
-	//	return
-	//}
-
 	if err != nil {
 		panic(err)
 	}
 
-	newSocketId := atomic.AddUint64(&ConnectionPool.connectionCounter, 1)
-	ConnectionPool.connections.Store(newSocketId, conn)
+	ConnectionPool.Store(conn, struct{}{})
 	go ReadSocket(conn)
 }
 

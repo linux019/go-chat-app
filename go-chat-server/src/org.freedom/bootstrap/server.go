@@ -7,16 +7,27 @@ import (
 	"sync"
 	"time"
 )
+
 type CommandListener func(conn *websocket.Conn, data interface{}) interface{}
 
-var ConnectionPool struct {
-	connectionCounter uint64
-	connections       sync.Map //connId:websocket.Conn
+var ConnectionPool sync.Map
+
+type UserConnection struct {
+	sync.Map
 }
 
-var UserConnections = make(map[*websocket.Conn]string)
-var serverCommandListeners = make(map[string]CommandListener)
 
+func (u *UserConnection) StoreString(conn *websocket.Conn, userName string) {
+	u.Store(conn, userName)
+}
+//type UserChannels struct {
+//	userName string
+//	channels []string
+//	socketConn []websocket.Conn
+//} 
+
+var UserConnections = UserConnection{}
+var serverCommandListeners = make(map[string]CommandListener)
 
 func AddCommandListener(command string, f CommandListener) {
 	serverCommandListeners[command] = f
@@ -32,14 +43,14 @@ func CheckKeepAliveSockets() {
 			if OsSignal != nil {
 				break
 			}
-			ConnectionPool.connections.Range(func(connId, value interface{}) bool {
-				conn := value.(*websocket.Conn)
-				fmt.Printf("PING %v\n", connId)
+
+			ConnectionPool.Range(func(connId, value interface{}) bool {
+				conn := connId.(*websocket.Conn)
 				err := conn.WriteControl(websocket.PingMessage, []byte("PING"), time.Now().Add(time.Second*10))
 				if err != nil {
 					_ = conn.Close()
-					ConnectionPool.connections.Delete(connId)
-					delete(UserConnections, conn)
+					ConnectionPool.Delete(connId)
+					UserConnections.Delete(conn)
 					fmt.Printf("Disconnecting %v\n", connId)
 				}
 				return true
