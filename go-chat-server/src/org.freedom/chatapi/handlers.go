@@ -10,7 +10,18 @@ import (
 var commandSetUserName bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
 	name, result := data.(string)
 	if result {
-		bootstrap.UserConnections.StoreString(conn, name)
+		userData, exists := bootstrap.ConnectionsByUser[name]
+		if exists {
+			userData.Mutex.Lock()
+			userData.Connections[conn] = struct{}{}
+			userData.Mutex.Unlock()
+		} else {
+			userData = &bootstrap.UserSocketConnections{
+				Connections: make(bootstrap.ConnectionsMap),
+			}
+			userData.Connections[conn] = struct{}{}
+			bootstrap.ConnectionsByUser[name] = userData
+		}
 	}
 	return commandListChannels(conn, nil)
 }

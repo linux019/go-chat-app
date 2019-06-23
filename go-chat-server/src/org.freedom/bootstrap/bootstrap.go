@@ -41,7 +41,6 @@ func (h HttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	ConnectionPool.Store(conn, struct{}{})
 	go ReadSocket(conn)
 }
 

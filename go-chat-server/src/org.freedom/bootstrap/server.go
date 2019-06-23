@@ -10,21 +10,18 @@ import (
 
 type CommandListener func(conn *websocket.Conn, data interface{}) interface{}
 
-var ConnectionPool sync.Map
+type ConnectionsMap map[*websocket.Conn]struct{}
+
+type UserSocketConnections struct {
+	Mutex       sync.Mutex
+	Connections ConnectionsMap
+}
+
+var ConnectionsByUser = make(map[string]*UserSocketConnections)
 
 type UserConnection struct {
 	sync.Map
 }
-
-
-func (u *UserConnection) StoreString(conn *websocket.Conn, userName string) {
-	u.Store(conn, userName)
-}
-//type UserChannels struct {
-//	userName string
-//	channels []string
-//	socketConn []websocket.Conn
-//} 
 
 var UserConnections = UserConnection{}
 var serverCommandListeners = make(map[string]CommandListener)
@@ -44,17 +41,21 @@ func CheckKeepAliveSockets() {
 				break
 			}
 
-			ConnectionPool.Range(func(connId, value interface{}) bool {
-				conn := connId.(*websocket.Conn)
-				err := conn.WriteControl(websocket.PingMessage, []byte("PING"), time.Now().Add(time.Second*10))
-				if err != nil {
-					_ = conn.Close()
-					ConnectionPool.Delete(connId)
-					UserConnections.Delete(conn)
-					fmt.Printf("Disconnecting %v\n", connId)
+			for userName := range ConnectionsByUser {
+				userConns, exists := ConnectionsByUser[userName]
+				if exists {
+					userConns.Mutex.Lock()
+					for conn := range userConns.Connections {
+						err := conn.WriteControl(websocket.PingMessage, []byte("PING"), time.Now().Add(time.Second*10))
+						if err != nil {
+							_ = conn.Close()
+							delete(userConns.Connections, conn)
+							fmt.Printf("Disconnecting %v\n", userName)
+						}
+					}
+					userConns.Mutex.Unlock()
 				}
-				return true
-			})
+			}
 		}
 	}
 }

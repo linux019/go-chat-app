@@ -14,7 +14,7 @@ var wsHandlers = bootstrap.HttpHandler{
 
 type ChannelsList struct {
 	mutex    sync.Mutex
-	channels map[string]struct{}
+	channels map[string]*channelPeer
 }
 
 type channelsJSON struct {
@@ -25,11 +25,13 @@ type messagesJSON struct {
 	Messages *[]channelMessage `json:"messages"`
 }
 
+type channelPeer struct {
+	mutex sync.Mutex
+	peers []string
+}
+
 var channelsList = ChannelsList{
-	channels: map[string]struct{}{
-		"general": {},
-		"news":    {},
-	},
+	channels: make(map[string]*channelPeer),
 }
 
 type channelMessage struct {
@@ -60,8 +62,4 @@ func Setup() {
 func wsHandler(r *http.Request) (status int, response *[]byte, e error) {
 	var body = []byte("PONG")
 	return http.StatusOK, &body, nil
-}
-
-func dispatchMessage() {
-
 }
