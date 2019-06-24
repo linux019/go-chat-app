@@ -26,8 +26,9 @@ type messagesJSON struct {
 }
 
 type channelPeer struct {
-	mutex sync.Mutex
-	peers []string
+	mutex    sync.Mutex
+	isPublic bool
+	peers    []string
 }
 
 var channelsList = ChannelsList{
@@ -50,6 +51,10 @@ var channelMessages = channelMessagesHistory{
 	messages: make(channelsMessagesMap, 0),
 }
 
+func (cl *ChannelsList) AddChannel(name string, isPublic bool) {
+	cl.channels[name] = &channelPeer{isPublic: isPublic}
+}
+
 func Setup() {
 	bootstrap.AddEndPoints("/ws", &wsHandlers)
 	bootstrap.AddCommandListener("SET_USERNAME", commandSetUserName)
@@ -57,6 +62,8 @@ func Setup() {
 	bootstrap.AddCommandListener("GET_CHANNEL_MESSAGES", commandListChannelMessages)
 	bootstrap.AddCommandListener("POST_MESSAGE", commandStoreUserMessage)
 	bootstrap.AddCommandListener("CREATE_CHANNEL", commandCreateChannel)
+	channelsList.AddChannel("general", true)
+	channelsList.AddChannel("news", true)
 }
 
 func wsHandler(r *http.Request) (status int, response *[]byte, e error) {
