@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"org.freedom/bootstrap"
 	"sync"
+	"time"
 )
 
 var wsHandlers = bootstrap.HttpHandler{
@@ -17,8 +18,12 @@ type ChannelsList struct {
 	channels map[string]*channelPeer
 }
 
+type channelJSON struct {
+	IsPublic bool `json:"is_public"`
+}
+
 type channelsJSON struct {
-	Channels *[]string `json:"channels"`
+	Channels map[string]channelJSON `json:"channels"`
 }
 
 type messagesJSON struct {
@@ -51,8 +56,31 @@ var channelMessages = channelMessagesHistory{
 	messages: make(channelsMessagesMap, 0),
 }
 
+func (c *channelMessagesHistory) AppendMessage(channelName, text, sender string) {
+	var newMessage = channelMessage{
+		Message: text,
+		Time:    time.Now().Unix(),
+		Sender:  sender,
+	}
+
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	channelsMessagesArray, _ := c.messages[channelName]
+	if channelsMessagesArray == nil {
+		channelsMessagesArray = make([]channelMessage, 0, 1)
+	}
+	channelsMessagesArray = append(channelsMessagesArray, newMessage)
+	channelMessages.messages[channelName] = channelsMessagesArray
+}
+
 func (cl *ChannelsList) AddChannel(name string, isPublic bool) {
-	cl.channels[name] = &channelPeer{isPublic: isPublic}
+	cl.mutex.Lock()
+	defer cl.mutex.Unlock()
+	_, exists := cl.channels[name]
+	if !exists {
+		cl.channels[name] = &channelPeer{isPublic: isPublic}
+	}
 }
 
 func Setup() {

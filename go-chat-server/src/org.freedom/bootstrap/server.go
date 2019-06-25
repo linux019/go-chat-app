@@ -23,6 +23,22 @@ type UserConnection struct {
 	sync.Map
 }
 
+func (uc *UserConnection) StoreConnection(conn *websocket.Conn, userName string) (name string, loaded bool) {
+	v, loaded := uc.LoadOrStore(conn, userName)
+	if loaded {
+		name = v.(string)
+	}
+	return
+}
+
+func (uc *UserConnection) LoadConnection(conn *websocket.Conn) (name string, ok bool) {
+	v, ok := uc.Load(conn)
+	if ok {
+		name = v.(string)
+	}
+	return
+}
+
 var UserConnections = UserConnection{}
 var serverCommandListeners = make(map[string]CommandListener)
 
@@ -50,6 +66,7 @@ func CheckKeepAliveSockets() {
 						if err != nil {
 							_ = conn.Close()
 							delete(userConns.Connections, conn)
+							UserConnections.Delete(conn)
 							fmt.Printf("Disconnecting %v\n", userName)
 						}
 					}

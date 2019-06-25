@@ -81,7 +81,7 @@ export const Sidebar = () => (
                     <ul className="collection with-header">
                         <li className="collection-header"><h6>Channels</h6></li>
                         {
-                            channels.map(
+                            Object.keys(channels).map(
                                 ch =>
                                     <li key={ch}
                                         onClick={e => {

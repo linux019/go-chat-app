@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"org.freedom/bootstrap"
-	"time"
 )
 
 var commandSetUserName bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
@@ -22,6 +21,7 @@ var commandSetUserName bootstrap.CommandListener = func(conn *websocket.Conn, da
 			userData.Connections[conn] = struct{}{}
 			bootstrap.ConnectionsByUser[name] = userData
 		}
+		bootstrap.UserConnections.StoreConnection(conn, name)
 	}
 	return commandListChannels(conn, nil)
 }
@@ -30,13 +30,15 @@ var commandListChannels bootstrap.CommandListener = func(conn *websocket.Conn, d
 	channelsList.mutex.Lock()
 	defer channelsList.mutex.Unlock()
 
-	names := make([]string, 0)
-	for name := range channelsList.channels {
-		names = append(names, name)
+	channels := make(map[string]channelJSON)
+	for name, attributes := range channelsList.channels {
+		channels[name] = channelJSON{
+			IsPublic: attributes.isPublic,
+		}
 	}
 
 	return channelsJSON{
-		Channels: &names,
+		Channels: channels,
 	}
 }
 
@@ -74,22 +76,9 @@ var commandStoreUserMessage bootstrap.CommandListener = func(conn *websocket.Con
 			_, exists := channelsList.channels[channelName]
 
 			if exists {
-				var user, _ = bootstrap.UserConnections.Load(conn)
+				var user, exists = bootstrap.UserConnections.LoadConnection(conn)
 				if exists {
-					var newMessage = channelMessage{
-						Message: message.(string),
-						Time:    time.Now().Unix(),
-						Sender:  user.(string),
-					}
-					channelMessages.mutex.Lock()
-					defer channelMessages.mutex.Unlock()
-
-					channelsMessagesArray, _ := channelMessages.messages[channelName]
-					if channelsMessagesArray == nil {
-						channelsMessagesArray = make([]channelMessage, 0, 1)
-					}
-					channelsMessagesArray = append(channelsMessagesArray, newMessage)
-					channelMessages.messages[channelName] = channelsMessagesArray
+					channelMessages.AppendMessage(channelName, message.(string), user)
 					return commandListChannelMessages(conn, channelName)
 				}
 
@@ -104,9 +93,7 @@ var commandCreateChannel bootstrap.CommandListener = func(conn *websocket.Conn, 
 	name, result := data.(string)
 
 	if result {
-		channelsList.mutex.Lock()
-		channelsList.channels[name] = struct{}{}
-		channelsList.mutex.Unlock()
+		channelsList.AddChannel(name, true)
 	}
 
 	return commandListChannels(conn, nil)
