@@ -1,6 +1,7 @@
 package chatapi
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"org.freedom/bootstrap"
@@ -33,7 +34,7 @@ var commandListChannels bootstrap.CommandListener = func(conn *websocket.Conn, d
 	channels := make(map[string]channelJSON)
 	for name, attributes := range channelsList.channels {
 		channels[name] = channelJSON{
-			IsPublic: attributes.isPublic,
+			IsCommon: attributes.isCommon,
 		}
 	}
 
@@ -73,20 +74,41 @@ var commandStoreUserMessage bootstrap.CommandListener = func(conn *websocket.Con
 		fmt.Println(message, exists)
 
 		if len(channelName) > 0 && len(message.(string)) > 0 {
-			_, exists := channelsList.channels[channelName]
+			channelsList.mutex.Lock()
+			defer channelsList.mutex.Unlock()
+			channelData, exists := channelsList.channels[channelName]
 
 			if exists {
 				var user, exists = bootstrap.UserConnections.LoadConnection(conn)
 				if exists {
-					channelMessages.AppendMessage(channelName, message.(string), user)
-					return commandListChannelMessages(conn, channelName)
+					message := channelMessages.AppendMessage(channelName, message.(string), user)
+					go dispatchChannelMessage(channelData, channelName, message)
 				}
-
 			}
 		}
 	}
 
 	return nil
+}
+
+func dispatchChannelMessage(c *channelPeers, channelName string, message *channelMessage) {
+	jsonValue, err := json.Marshal(messageJSON{
+		ChannelName: channelName,
+		Message:     *message,
+	})
+	if err != nil {
+		return
+	}
+
+	if c.isCommon {
+		for _, user := range bootstrap.ConnectionsByUser {
+			user.Mutex.Lock()
+			for conn := range user.Connections {
+				_ = conn.WriteMessage(websocket.TextMessage, jsonValue)
+			}
+			user.Mutex.Unlock()
+		}
+	}
 }
 
 var commandCreateChannel bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {

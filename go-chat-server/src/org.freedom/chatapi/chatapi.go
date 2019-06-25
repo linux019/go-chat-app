@@ -15,11 +15,11 @@ var wsHandlers = bootstrap.HttpHandler{
 
 type ChannelsList struct {
 	mutex    sync.Mutex
-	channels map[string]*channelPeer
+	channels map[string]*channelPeers
 }
 
 type channelJSON struct {
-	IsPublic bool `json:"is_public"`
+	IsCommon bool `json:"is_common"`
 }
 
 type channelsJSON struct {
@@ -30,14 +30,19 @@ type messagesJSON struct {
 	Messages *[]channelMessage `json:"messages"`
 }
 
-type channelPeer struct {
+type messageJSON struct {
+	ChannelName string         `json:"channelName"`
+	Message     channelMessage `json:"message"`
+}
+
+type channelPeers struct {
 	mutex    sync.Mutex
-	isPublic bool
+	isCommon bool
 	peers    []string
 }
 
 var channelsList = ChannelsList{
-	channels: make(map[string]*channelPeer),
+	channels: make(map[string]*channelPeers),
 }
 
 type channelMessage struct {
@@ -56,7 +61,7 @@ var channelMessages = channelMessagesHistory{
 	messages: make(channelsMessagesMap, 0),
 }
 
-func (c *channelMessagesHistory) AppendMessage(channelName, text, sender string) {
+func (c *channelMessagesHistory) AppendMessage(channelName, text, sender string) *channelMessage {
 	var newMessage = channelMessage{
 		Message: text,
 		Time:    time.Now().Unix(),
@@ -72,14 +77,15 @@ func (c *channelMessagesHistory) AppendMessage(channelName, text, sender string)
 	}
 	channelsMessagesArray = append(channelsMessagesArray, newMessage)
 	channelMessages.messages[channelName] = channelsMessagesArray
+	return &newMessage
 }
 
-func (cl *ChannelsList) AddChannel(name string, isPublic bool) {
+func (cl *ChannelsList) AddChannel(name string, isCommon bool) {
 	cl.mutex.Lock()
 	defer cl.mutex.Unlock()
 	_, exists := cl.channels[name]
 	if !exists {
-		cl.channels[name] = &channelPeer{isPublic: isPublic}
+		cl.channels[name] = &channelPeers{isCommon: isCommon}
 	}
 }
 

@@ -87,6 +87,9 @@ class ChatApp extends React.Component {
 
     onServerData = data => {
         const newState = {};
+        if (!this.socket) {
+            return;
+        }
         if (data.channels) {
             newState.channels = data.channels;
             if (!this.state.activeChannel) {
@@ -94,8 +97,8 @@ class ChatApp extends React.Component {
             }
         }
 
-        if (data.messages && this.dialogueCallback) {
-            this.dialogueCallback(data.messages);
+        if (this.dialogueCallback) {
+            (data.messages || data.message) && this.dialogueCallback(data);
         }
 
         if (Object.keys(newState).length) {
@@ -114,8 +117,9 @@ class ChatApp extends React.Component {
     setActiveChannel = activeChannel => this.setState({activeChannel});
     setDialogueCallback = callback => {
         this.dialogueCallback = callback;
-        this.sendCommand('GET_CHANNEL_MESSAGES', this.state.activeChannel);
     };
+
+    loadMessages = () => this.sendCommand('GET_CHANNEL_MESSAGES', this.state.activeChannel);
 
     sendUserMessage = message => this.sendCommand('POST_MESSAGE', {channel: this.state.activeChannel, message});
 
@@ -146,6 +150,7 @@ class ChatApp extends React.Component {
                                   activeChannel={activeChannel}
                                   setCallback={this.setDialogueCallback}
                                   sendUserMessage={this.sendUserMessage}
+                                  loadMessages={this.loadMessages}
                     />
                 }
             </DataContext.Provider>

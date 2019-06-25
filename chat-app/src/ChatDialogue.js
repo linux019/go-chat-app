@@ -10,15 +10,25 @@ class ChatDialogue extends React.Component {
 
     static propTypes = {
         activeChannel: PropTypes.string.isRequired,
+        loadMessages: PropTypes.func.isRequired,
         setCallback: PropTypes.func.isRequired,
         sendUserMessage: PropTypes.func.isRequired,
     };
 
     componentDidMount() {
         this.props.setCallback(this.storeMessages);
+        this.props.loadMessages();
     }
 
-    storeMessages = messages => this.setState({messages});
+    storeMessages = ({messages, message, channelName}) => {
+        if (message && channelName === this.props.activeChannel) {
+            messages = [...this.state.messages];
+            messages.push(message);
+        }
+        if (messages) {
+            this.setState({messages});
+        }
+    };
 
     componentWillUnmount() {
         this.props.setCallback(null);
