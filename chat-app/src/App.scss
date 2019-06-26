@@ -44,6 +44,7 @@
       & > li.collection-item {
         cursor: pointer;
         font-weight: 300;
+        position: relative;
 
         &:hover {
           background: #a9a9a9;
@@ -52,6 +53,12 @@
         &.active {
           background: #5a7a94;
           font-weight: 600;
+        }
+
+        & > i.message {
+          position: absolute;
+          left: 10px;
+          top: 15px;
         }
       }
     }

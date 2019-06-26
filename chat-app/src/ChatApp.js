@@ -12,6 +12,7 @@ class ChatApp extends React.Component {
         activeChannel: null,
         connected: false,
         channels: [],
+        unreadChannels: {},
     };
 
     static propTypes = {
@@ -68,7 +69,6 @@ class ChatApp extends React.Component {
 
 
         this.setName();
-        // this.getChannels();
     };
 
     onConnectionClose = reconnect => {
@@ -87,18 +87,27 @@ class ChatApp extends React.Component {
 
     onServerData = data => {
         const newState = {};
+        const {activeChannel, unreadChannels} = this.state;
+
         if (!this.socket) {
             return;
         }
         if (data.channels) {
             newState.channels = data.channels;
-            if (!this.state.activeChannel) {
+            if (!activeChannel) {
                 newState.activeChannel = data.channels[0];
             }
         }
 
         if (this.dialogueCallback) {
             (data.messages || data.message) && this.dialogueCallback(data);
+        }
+
+        if (data.message && data.channelName !== activeChannel) {
+            newState.unreadChannels = {
+                ...unreadChannels,
+                ...{[data.channelName]: true}
+            }
         }
 
         if (Object.keys(newState).length) {
@@ -114,7 +123,15 @@ class ChatApp extends React.Component {
         }
     }
 
-    setActiveChannel = activeChannel => this.setState({activeChannel});
+    setActiveChannel = activeChannel => {
+        const unreadChannels = {...this.state.unreadChannels};
+        delete unreadChannels[activeChannel];
+
+        this.setState({
+            activeChannel,
+            unreadChannels
+        });
+    };
     setDialogueCallback = callback => {
         this.dialogueCallback = callback;
     };
@@ -134,9 +151,9 @@ class ChatApp extends React.Component {
 
     render() {
         const {userName} = this.props;
-        const {channels, connected, activeChannel} = this.state;
+        const {channels, connected, activeChannel, unreadChannels} = this.state;
         const contextData = {
-            userName, connected, channels, activeChannel,
+            userName, connected, channels, activeChannel, unreadChannels,
             askForChannelName: this.askForChannelName,
             setActiveChannel: this.setActiveChannel,
         };

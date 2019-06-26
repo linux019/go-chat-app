@@ -51,7 +51,10 @@ export const WelcomeScreen = ({name, setData}) => (
 export const Sidebar = () => (
     <DataContext.Consumer>
         {
-            ({userName, connected, channels, activeChannel, askForChannelName, setActiveChannel}) => (
+            ({
+                 userName, connected, channels, activeChannel, unreadChannels,
+                 askForChannelName, setActiveChannel
+             }) => (
                 <div className='sidebar'>
                     <div className="card blue-grey darken-1">
                         <div className="card-content white-text">
@@ -90,6 +93,10 @@ export const Sidebar = () => (
                                             setActiveChannel(ch);
                                         }}
                                         className={classnames("collection-item", activeChannel === ch && 'active')}>
+                                        {
+                                            unreadChannels[ch] &&
+                                            <i className="material-icons left tiny light-green-text message">message</i>
+                                        }
                                         {ch}
                                     </li>
                             )
