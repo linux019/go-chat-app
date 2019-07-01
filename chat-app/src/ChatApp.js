@@ -12,6 +12,7 @@ class ChatApp extends React.Component {
         activeChannel: null,
         connected: false,
         channels: [],
+        users: {},
         unreadChannels: {},
     };
 
@@ -92,6 +93,7 @@ class ChatApp extends React.Component {
         if (!this.socket) {
             return;
         }
+
         if (data.channels) {
             newState.channels = data.channels;
             if (!activeChannel) {
@@ -108,6 +110,10 @@ class ChatApp extends React.Component {
                 ...unreadChannels,
                 ...{[data.channelName]: true}
             }
+        }
+
+        if (data.users) {
+            newState.users = data.users;
         }
 
         if (Object.keys(newState).length) {
@@ -137,6 +143,7 @@ class ChatApp extends React.Component {
     };
 
     loadMessages = () => this.sendCommand('GET_CHANNEL_MESSAGES', this.state.activeChannel);
+    getUsersList = () => this.sendCommand('LIST_USERS', null);
 
     sendUserMessage = message => this.sendCommand('POST_MESSAGE', {channel: this.state.activeChannel, message});
 
@@ -149,14 +156,21 @@ class ChatApp extends React.Component {
         }
     };
 
+    openChannel = userName => {
+
+    };
+
     render() {
         const {userName} = this.props;
-        const {channels, connected, activeChannel, unreadChannels} = this.state;
+        const {channels, connected, activeChannel, unreadChannels, users} = this.state;
         const contextData = {
-            userName, connected, channels, activeChannel, unreadChannels,
+            userName, connected, channels, activeChannel, unreadChannels, users,
             askForChannelName: this.askForChannelName,
             setActiveChannel: this.setActiveChannel,
+            getUsersList: this.getUsersList,
+            openChannel: this.openChannel,
         };
+
         return (
             <DataContext.Provider
                 value={contextData}>

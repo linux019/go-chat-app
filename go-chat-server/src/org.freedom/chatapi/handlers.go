@@ -10,26 +10,15 @@ import (
 var commandSetUserName bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
 	name, result := data.(string)
 	if result {
-		userData, exists := bootstrap.ConnectionsByUser[name]
-		if exists {
-			userData.Mutex.Lock()
-			userData.Connections[conn] = struct{}{}
-			userData.Mutex.Unlock()
-		} else {
-			userData = &bootstrap.UserSocketConnections{
-				Connections: make(bootstrap.ConnectionsMap),
-			}
-			userData.Connections[conn] = struct{}{}
-			bootstrap.ConnectionsByUser[name] = userData
-		}
+		bootstrap.ConnectionsByUser.AddUserConn(conn, name)
 		bootstrap.UserConnections.StoreConnection(conn, name)
 	}
 	return commandListChannels(conn, nil)
 }
 
 var commandListChannels bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
-	channelsList.mutex.Lock()
-	defer channelsList.mutex.Unlock()
+	channelsList.mutex.RLock()
+	defer channelsList.mutex.RUnlock()
 
 	channels := make(map[string]channelJSON)
 	for name, attributes := range channelsList.channels {
@@ -48,6 +37,10 @@ var commandListChannelMessages bootstrap.CommandListener = func(conn *websocket.
 	if !success {
 		return nil
 	}
+
+	channelMessages.mutex.RLock()
+	defer channelMessages.mutex.RUnlock()
+
 	messages, ok := channelMessages.messages[channel]
 
 	if ok {
@@ -74,8 +67,8 @@ var commandStoreUserMessage bootstrap.CommandListener = func(conn *websocket.Con
 		fmt.Println(message, exists)
 
 		if len(channelName) > 0 && len(message.(string)) > 0 {
-			channelsList.mutex.Lock()
-			defer channelsList.mutex.Unlock()
+			channelsList.mutex.RLock()
+			defer channelsList.mutex.RUnlock()
 			channelData, exists := channelsList.channels[channelName]
 
 			if exists {
@@ -102,18 +95,15 @@ func dispatchChannelMessage(c *channelPeers, channelName string, message *channe
 	}
 
 	if c.isCommon {
-		for _, user := range bootstrap.ConnectionsByUser {
-			user.Mutex.Lock()
-			for conn := range user.Connections {
-				_ = conn.WriteMessage(websocket.TextMessage, jsonValue)
-			}
-			user.Mutex.Unlock()
-		}
+		bootstrap.ConnectionsByUser.WriteMessageToAll(&jsonValue)
 	}
 }
 
 func dispatchPublicChannels() {
 	channels := make(map[string]channelJSON)
+
+	channelsList.mutex.RLock()
+	defer channelsList.mutex.RUnlock()
 
 	for name, attributes := range channelsList.channels {
 		channels[name] = channelJSON{
@@ -129,13 +119,7 @@ func dispatchPublicChannels() {
 		return
 	}
 
-	for _, user := range bootstrap.ConnectionsByUser {
-		user.Mutex.Lock()
-		for conn := range user.Connections {
-			_ = conn.WriteMessage(websocket.TextMessage, jsonValue)
-		}
-		user.Mutex.Unlock()
-	}
+	bootstrap.ConnectionsByUser.WriteMessageToAll(&jsonValue)
 }
 
 var commandCreateChannel bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
@@ -148,4 +132,21 @@ var commandCreateChannel bootstrap.CommandListener = func(conn *websocket.Conn, 
 	go dispatchPublicChannels()
 
 	return nil
+}
+
+var commandListUsers bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
+
+	users := usersJSON{
+		Users: make(map[string]userJSON),
+	}
+
+	userConns := bootstrap.ConnectionsByUser.GetConnectedUsersStatus()
+
+	for name, connCount := range userConns {
+		users.Users[name] = userJSON{
+			Online: connCount > 0,
+		}
+	}
+
+	return users
 }

@@ -13,11 +13,61 @@ type CommandListener func(conn *websocket.Conn, data interface{}) interface{}
 type ConnectionsMap map[*websocket.Conn]struct{}
 
 type UserSocketConnections struct {
-	Mutex       sync.Mutex
+	Mutex       sync.RWMutex
 	Connections ConnectionsMap
 }
 
-var ConnectionsByUser = make(map[string]*UserSocketConnections)
+type connectionsByUser struct {
+	mutex             sync.RWMutex
+	socketConnections map[string]*UserSocketConnections
+}
+
+func (c *connectionsByUser) AddUserConn(conn *websocket.Conn, name string) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	conns, ok := c.socketConnections[name]
+	if ok {
+		conns.Mutex.Lock()
+		conns.Connections[conn] = struct{}{}
+		conns.Mutex.Unlock()
+	} else {
+		conns = &UserSocketConnections{
+			Connections: make(ConnectionsMap),
+		}
+		conns.Connections[conn] = struct{}{}
+		c.socketConnections[name] = conns
+	}
+}
+
+func (c *connectionsByUser) WriteMessageToAll(message *[]byte) {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+
+	for _, user := range c.socketConnections {
+		user.Mutex.RLock()
+		for conn := range user.Connections {
+			_ = conn.WriteMessage(websocket.TextMessage, *message)
+		}
+		user.Mutex.RUnlock()
+	}
+}
+
+func (c *connectionsByUser) GetConnectedUsersStatus() map[string]int {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+	var users = make(map[string]int)
+	for userName, connections := range c.socketConnections {
+		connections.Mutex.RLock()
+		users[userName] = len(connections.Connections)
+		connections.Mutex.RUnlock()
+	}
+
+	return users
+}
+
+var ConnectionsByUser = connectionsByUser{
+	socketConnections: make(map[string]*UserSocketConnections),
+}
 
 type UserConnection struct {
 	sync.Map
@@ -57,22 +107,21 @@ func CheckKeepAliveSockets() {
 				break
 			}
 
-			for userName := range ConnectionsByUser {
-				userConns, exists := ConnectionsByUser[userName]
-				if exists {
-					userConns.Mutex.Lock()
-					for conn := range userConns.Connections {
-						err := conn.WriteControl(websocket.PingMessage, []byte("PING"), time.Now().Add(time.Second*10))
-						if err != nil {
-							_ = conn.Close()
-							delete(userConns.Connections, conn)
-							UserConnections.Delete(conn)
-							fmt.Printf("Disconnecting %v\n", userName)
-						}
+			ConnectionsByUser.mutex.RLock()
+			for userName, userConns := range ConnectionsByUser.socketConnections {
+				userConns.Mutex.Lock()
+				for conn := range userConns.Connections {
+					err := conn.WriteControl(websocket.PingMessage, []byte("PING"), time.Now().Add(time.Second*10))
+					if err != nil {
+						_ = conn.Close()
+						delete(userConns.Connections, conn)
+						UserConnections.Delete(conn)
+						fmt.Printf("Disconnecting %v\n", userName)
 					}
-					userConns.Mutex.Unlock()
 				}
+				userConns.Mutex.Unlock()
 			}
+			ConnectionsByUser.mutex.RUnlock()
 		}
 	}
 }

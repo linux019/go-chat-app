@@ -1,6 +1,7 @@
 import React from 'react';
 import {DataContext} from './ChatApp';
 import classnames from 'classnames';
+import UsersList from './UsersList';
 
 const Names = [
     '',
@@ -52,7 +53,7 @@ export const WelcomeScreen = ({name, setData}) => (
 export const Sidebar = () => (
     <DataContext.Consumer>
         {
-            ({connected, askForChannelName}) => (
+            ({connected, getUsersList, askForChannelName, users, openChannel}) => (
                 <div className='sidebar'>
                     <GitHubLink/>
                     <UserNameCard/>
@@ -69,12 +70,10 @@ export const Sidebar = () => (
 
                     <ChannelsList/>
 
-                    {/*<UsersOnline
-                        users={{
-                            abc: {online: true},
-                            bob: {online: false},
-                        }}
-                    />*/}
+                    {
+                        connected &&
+                        <UsersList {...{getUsersList, users, openChannel}}/>
+                    }
                 </div>
             )
         }
@@ -128,30 +127,6 @@ const ChannelsList = () => (
     </DataContext.Consumer>
 );
 
-const UsersOnline = ({users, openChannel}) => (
-    <ul className="collection with-header users">
-        <li className="collection-header"><h6>Users</h6></li>
-        {
-            Object.keys(users).map(
-                name =>
-                    <li key={name}
-                        onClick={e => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            openChannel(name);
-                        }}
-                        className="collection-item">
-                        {
-                            users[name].online
-                                ? <i className="material-icons light-green-text">lens</i>
-                                : <i className="material-icons grey-text">radio_button_unchecked</i>
-                        }
-                        {name}
-                    </li>
-            )
-        }
-    </ul>
-);
 
 export const GitHubLink = () => (
     <a href="https://github.com/devbazilio/go-chat-app"

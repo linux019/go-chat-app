@@ -14,7 +14,7 @@ var wsHandlers = bootstrap.HttpHandler{
 }
 
 type ChannelsList struct {
-	mutex    sync.Mutex
+	mutex    sync.RWMutex
 	channels map[string]*channelPeers
 }
 
@@ -35,8 +35,22 @@ type messageJSON struct {
 	Message     channelMessage `json:"message"`
 }
 
+type channelMessage struct {
+	Time    int64  `json:"time"`
+	Message string `json:"message"`
+	Sender  string `json:"sender"`
+}
+
+type userJSON struct {
+	Online bool `json:"online"`
+}
+
+type usersJSON struct {
+	Users map[string]userJSON `json:"users"`
+}
+
 type channelPeers struct {
-	mutex    sync.Mutex
+	mutex    sync.RWMutex
 	isCommon bool
 	peers    []string
 }
@@ -45,15 +59,9 @@ var channelsList = ChannelsList{
 	channels: make(map[string]*channelPeers),
 }
 
-type channelMessage struct {
-	Time    int64  `json:"time"`
-	Message string `json:"message"`
-	Sender  string `json:"sender"`
-}
-
 type channelsMessagesMap map[string][]channelMessage
 type channelMessagesHistory struct {
-	mutex    sync.Mutex
+	mutex    sync.RWMutex
 	messages channelsMessagesMap
 }
 
@@ -96,6 +104,7 @@ func Setup() {
 	bootstrap.AddCommandListener("GET_CHANNEL_MESSAGES", commandListChannelMessages)
 	bootstrap.AddCommandListener("POST_MESSAGE", commandStoreUserMessage)
 	bootstrap.AddCommandListener("CREATE_CHANNEL", commandCreateChannel)
+	bootstrap.AddCommandListener("LIST_USERS", commandListUsers)
 	channelsList.AddChannel("general", true)
 	channelsList.AddChannel("news", true)
 }
