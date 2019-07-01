@@ -2,11 +2,18 @@
   height: 100vh;
   overflow: hidden;
   display: flex;
+  position: relative;
 
   select {
     display: block;
   }
 
+  .repo-logo {
+    position: absolute;
+    top: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
 
   .rotate {
     animation-name: spin;

@@ -96,6 +96,7 @@ func dispatchChannelMessage(c *channelPeers, channelName string, message *channe
 		ChannelName: channelName,
 		Message:     *message,
 	})
+
 	if err != nil {
 		return
 	}
@@ -111,6 +112,32 @@ func dispatchChannelMessage(c *channelPeers, channelName string, message *channe
 	}
 }
 
+func dispatchPublicChannels() {
+	channels := make(map[string]channelJSON)
+
+	for name, attributes := range channelsList.channels {
+		channels[name] = channelJSON{
+			IsCommon: attributes.isCommon,
+		}
+	}
+
+	jsonValue, err := json.Marshal(channelsJSON{
+		Channels: channels,
+	})
+
+	if err != nil {
+		return
+	}
+
+	for _, user := range bootstrap.ConnectionsByUser {
+		user.Mutex.Lock()
+		for conn := range user.Connections {
+			_ = conn.WriteMessage(websocket.TextMessage, jsonValue)
+		}
+		user.Mutex.Unlock()
+	}
+}
+
 var commandCreateChannel bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
 	name, result := data.(string)
 
@@ -118,5 +145,7 @@ var commandCreateChannel bootstrap.CommandListener = func(conn *websocket.Conn, 
 		channelsList.AddChannel(name, true)
 	}
 
-	return commandListChannels(conn, nil)
+	go dispatchPublicChannels()
+
+	return nil
 }
