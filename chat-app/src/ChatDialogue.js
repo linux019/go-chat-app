@@ -47,7 +47,8 @@ class ChatDialogue extends React.Component {
         const {messages, text} = this.state;
         return (
             <div className="dialogue">
-                <div className={'chat'}>
+                <div className='chat'>
+                    <div className='chat-header'>{this.props.activeChannel}</div>
                     <div className={'messages'}>
                         {
                             messages.length > 0
