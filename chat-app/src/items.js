@@ -84,7 +84,7 @@ export const Sidebar = () => (
 const UserNameCard = () => (
     <DataContext.Consumer>
         {
-            (connected, userName) =>
+            ({connected, userName}) =>
                 <div className="card blue-grey darken-1">
                     <div className="card-content white-text">
                         <span className="card-title">{userName}</span>
@@ -142,10 +142,9 @@ const UsersOnline = ({users, openChannel}) => (
                         }}
                         className="collection-item">
                         {
-                            users[name].online ?
-                                <i className="material-icons light-green-text">lens</i>
-                                :
-                                <i className="material-icons grey-text">radio_button_unchecked</i>
+                            users[name].online
+                                ? <i className="material-icons light-green-text">lens</i>
+                                : <i className="material-icons grey-text">radio_button_unchecked</i>
                         }
                         {name}
                     </li>
