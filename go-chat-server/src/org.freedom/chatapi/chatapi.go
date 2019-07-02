@@ -27,15 +27,15 @@ type channelsJSON struct {
 }
 
 type messagesJSON struct {
-	Messages *[]channelMessage `json:"messages"`
+	Messages *[]channelMessageJSON `json:"messages"`
 }
 
 type messageJSON struct {
-	ChannelName string         `json:"channelName"`
-	Message     channelMessage `json:"message"`
+	ChannelName string             `json:"channelName"`
+	Message     channelMessageJSON `json:"message"`
 }
 
-type channelMessage struct {
+type channelMessageJSON struct {
 	Time    int64  `json:"time"`
 	Message string `json:"message"`
 	Sender  string `json:"sender"`
@@ -55,22 +55,23 @@ type channelPeers struct {
 	peers    []string
 }
 
-var channelsList = ChannelsList{
-	channels: make(map[string]*channelPeers),
-}
+type channelsMessagesMap map[string][]channelMessageJSON
 
-type channelsMessagesMap map[string][]channelMessage
 type channelMessagesHistory struct {
 	mutex    sync.RWMutex
 	messages channelsMessagesMap
+}
+
+var channelsList = ChannelsList{
+	channels: make(map[string]*channelPeers),
 }
 
 var channelMessages = channelMessagesHistory{
 	messages: make(channelsMessagesMap, 0),
 }
 
-func (c *channelMessagesHistory) AppendMessage(channelName, text, sender string) *channelMessage {
-	var newMessage = channelMessage{
+func (c *channelMessagesHistory) AppendMessage(channelName, text, sender string) *channelMessageJSON {
+	var newMessage = channelMessageJSON{
 		Message: text,
 		Time:    time.Now().Unix(),
 		Sender:  sender,
@@ -81,7 +82,7 @@ func (c *channelMessagesHistory) AppendMessage(channelName, text, sender string)
 
 	channelsMessagesArray, _ := c.messages[channelName]
 	if channelsMessagesArray == nil {
-		channelsMessagesArray = make([]channelMessage, 0, 1)
+		channelsMessagesArray = make([]channelMessageJSON, 0, 1)
 	}
 	channelsMessagesArray = append(channelsMessagesArray, newMessage)
 	channelMessages.messages[channelName] = channelsMessagesArray

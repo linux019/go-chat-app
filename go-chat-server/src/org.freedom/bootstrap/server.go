@@ -39,14 +39,18 @@ func (c *connectionsByUser) AddUserConn(conn *websocket.Conn, name string) {
 	}
 }
 
-func (c *connectionsByUser) WriteMessageToAll(message *[]byte) {
+func (c *connectionsByUser) WriteMessageToAll(jsonable interface{}) {
+	jsonValue, err := json.Marshal(jsonable)
+	if err != nil {
+		return
+	}
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 
 	for _, user := range c.socketConnections {
 		user.Mutex.RLock()
 		for conn := range user.Connections {
-			_ = conn.WriteMessage(websocket.TextMessage, *message)
+			_ = conn.WriteMessage(websocket.TextMessage, jsonValue)
 		}
 		user.Mutex.RUnlock()
 	}

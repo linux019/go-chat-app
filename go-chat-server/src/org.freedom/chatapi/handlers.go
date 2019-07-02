@@ -1,7 +1,6 @@
 package chatapi
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"org.freedom/bootstrap"
@@ -12,6 +11,7 @@ var commandSetUserName bootstrap.CommandListener = func(conn *websocket.Conn, da
 	if result {
 		bootstrap.ConnectionsByUser.AddUserConn(conn, name)
 		bootstrap.UserConnections.StoreConnection(conn, name)
+	//	dispatchUsersList
 	}
 	return commandListChannels(conn, nil)
 }
@@ -84,18 +84,14 @@ var commandStoreUserMessage bootstrap.CommandListener = func(conn *websocket.Con
 	return nil
 }
 
-func dispatchChannelMessage(c *channelPeers, channelName string, message *channelMessage) {
-	jsonValue, err := json.Marshal(messageJSON{
-		ChannelName: channelName,
-		Message:     *message,
-	})
-
-	if err != nil {
-		return
-	}
-
+func dispatchChannelMessage(c *channelPeers, channelName string, message *channelMessageJSON) {
 	if c.isCommon {
-		bootstrap.ConnectionsByUser.WriteMessageToAll(&jsonValue)
+		bootstrap.ConnectionsByUser.WriteMessageToAll(&messageJSON{
+			ChannelName: channelName,
+			Message:     *message,
+		})
+	} else {
+		panic("No private channels")
 	}
 }
 
@@ -111,15 +107,9 @@ func dispatchPublicChannels() {
 		}
 	}
 
-	jsonValue, err := json.Marshal(channelsJSON{
+	bootstrap.ConnectionsByUser.WriteMessageToAll(&channelsJSON{
 		Channels: channels,
 	})
-
-	if err != nil {
-		return
-	}
-
-	bootstrap.ConnectionsByUser.WriteMessageToAll(&jsonValue)
 }
 
 var commandCreateChannel bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
