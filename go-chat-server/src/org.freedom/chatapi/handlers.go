@@ -11,7 +11,7 @@ var commandSetUserName bootstrap.CommandListener = func(conn *websocket.Conn, da
 	if result {
 		bootstrap.ConnectionsByUser.AddUserConn(conn, name)
 		bootstrap.UserConnections.StoreConnection(conn, name)
-	//	dispatchUsersList
+		go dispatchUsersList()
 	}
 	return commandListChannels(conn, nil)
 }
@@ -112,20 +112,7 @@ func dispatchPublicChannels() {
 	})
 }
 
-var commandCreateChannel bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
-	name, result := data.(string)
-
-	if result {
-		channelsList.AddChannel(name, true)
-	}
-
-	go dispatchPublicChannels()
-
-	return nil
-}
-
-var commandListUsers bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
-
+func dispatchUsersList() {
 	users := usersJSON{
 		Users: make(map[string]userJSON),
 	}
@@ -138,5 +125,33 @@ var commandListUsers bootstrap.CommandListener = func(conn *websocket.Conn, data
 		}
 	}
 
-	return users
+	bootstrap.ConnectionsByUser.WriteMessageToAll(&users)
 }
+
+var commandCreateChannel bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
+	name, result := data.(string)
+
+	if result {
+		channelsList.AddChannel(name, true)
+	}
+
+	go dispatchPublicChannels()
+	return nil
+}
+
+//var commandListUsers bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
+//
+//	users := usersJSON{
+//		Users: make(map[string]userJSON),
+//	}
+//
+//	userConns := bootstrap.ConnectionsByUser.GetConnectedUsersStatus()
+//
+//	for name, connCount := range userConns {
+//		users.Users[name] = userJSON{
+//			Online: connCount > 0,
+//		}
+//	}
+//
+//	return users
+//}

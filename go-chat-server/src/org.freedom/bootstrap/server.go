@@ -2,10 +2,8 @@ package bootstrap
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/gorilla/websocket"
 	"sync"
-	"time"
 )
 
 type CommandListener func(conn *websocket.Conn, data interface{}) interface{}
@@ -18,14 +16,14 @@ type UserSocketConnections struct {
 }
 
 type connectionsByUser struct {
-	mutex             sync.RWMutex
-	socketConnections map[string]*UserSocketConnections
+	Mutex             sync.RWMutex
+	SocketConnections map[string]*UserSocketConnections
 }
 
 func (c *connectionsByUser) AddUserConn(conn *websocket.Conn, name string) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	conns, ok := c.socketConnections[name]
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+	conns, ok := c.SocketConnections[name]
 	if ok {
 		conns.Mutex.Lock()
 		conns.Connections[conn] = struct{}{}
@@ -35,7 +33,7 @@ func (c *connectionsByUser) AddUserConn(conn *websocket.Conn, name string) {
 			Connections: make(ConnectionsMap),
 		}
 		conns.Connections[conn] = struct{}{}
-		c.socketConnections[name] = conns
+		c.SocketConnections[name] = conns
 	}
 }
 
@@ -44,10 +42,10 @@ func (c *connectionsByUser) WriteMessageToAll(jsonable interface{}) {
 	if err != nil {
 		return
 	}
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
+	c.Mutex.RLock()
+	defer c.Mutex.RUnlock()
 
-	for _, user := range c.socketConnections {
+	for _, user := range c.SocketConnections {
 		user.Mutex.RLock()
 		for conn := range user.Connections {
 			_ = conn.WriteMessage(websocket.TextMessage, jsonValue)
@@ -57,10 +55,10 @@ func (c *connectionsByUser) WriteMessageToAll(jsonable interface{}) {
 }
 
 func (c *connectionsByUser) GetConnectedUsersStatus() map[string]int {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
+	c.Mutex.RLock()
+	defer c.Mutex.RUnlock()
 	var users = make(map[string]int)
-	for userName, connections := range c.socketConnections {
+	for userName, connections := range c.SocketConnections {
 		connections.Mutex.RLock()
 		users[userName] = len(connections.Connections)
 		connections.Mutex.RUnlock()
@@ -70,7 +68,7 @@ func (c *connectionsByUser) GetConnectedUsersStatus() map[string]int {
 }
 
 var ConnectionsByUser = connectionsByUser{
-	socketConnections: make(map[string]*UserSocketConnections),
+	SocketConnections: make(map[string]*UserSocketConnections),
 }
 
 type UserConnection struct {
@@ -98,36 +96,6 @@ var serverCommandListeners = make(map[string]CommandListener)
 
 func AddCommandListener(command string, f CommandListener) {
 	serverCommandListeners[command] = f
-}
-
-func CheckKeepAliveSockets() {
-	step := 0
-	for {
-		_ = <-time.After(time.Second * 1)
-		step++
-		if step > 30 {
-			step = 0
-			if OsSignal != nil {
-				break
-			}
-
-			ConnectionsByUser.mutex.RLock()
-			for userName, userConns := range ConnectionsByUser.socketConnections {
-				userConns.Mutex.Lock()
-				for conn := range userConns.Connections {
-					err := conn.WriteControl(websocket.PingMessage, []byte("PING"), time.Now().Add(time.Second*10))
-					if err != nil {
-						_ = conn.Close()
-						delete(userConns.Connections, conn)
-						UserConnections.Delete(conn)
-						fmt.Printf("Disconnecting %v\n", userName)
-					}
-				}
-				userConns.Mutex.Unlock()
-			}
-			ConnectionsByUser.mutex.RUnlock()
-		}
-	}
 }
 
 func ReadSocket(conn *websocket.Conn) {

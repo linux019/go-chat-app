@@ -93,7 +93,6 @@ func StartHttpServer() {
 	go func() {
 		log.Fatal(server.ListenAndServe())
 	}()
-	go CheckKeepAliveSockets()
 }
 
 func AddEndPoints(endPoint string, handlers *HttpHandler) {

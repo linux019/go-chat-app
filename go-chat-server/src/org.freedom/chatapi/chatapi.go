@@ -1,6 +1,8 @@
 package chatapi
 
 import (
+	"fmt"
+	"github.com/gorilla/websocket"
 	"net/http"
 	"org.freedom/bootstrap"
 	"sync"
@@ -105,12 +107,51 @@ func Setup() {
 	bootstrap.AddCommandListener("GET_CHANNEL_MESSAGES", commandListChannelMessages)
 	bootstrap.AddCommandListener("POST_MESSAGE", commandStoreUserMessage)
 	bootstrap.AddCommandListener("CREATE_CHANNEL", commandCreateChannel)
-	bootstrap.AddCommandListener("LIST_USERS", commandListUsers)
+	//bootstrap.AddCommandListener("LIST_USERS", commandListUsers)
 	channelsList.AddChannel("general", true)
 	channelsList.AddChannel("news", true)
+	go checkActiveConnections()
 }
 
 func wsHandler(r *http.Request) (status int, response *[]byte, e error) {
 	var body = []byte("PONG")
 	return http.StatusOK, &body, nil
+}
+
+func checkActiveConnections() {
+	step := 0
+	var usersListUpdated bool
+	for {
+		_ = <-time.After(time.Second * 1)
+		step++
+		if step > 30 {
+			step = 0
+			if bootstrap.OsSignal != nil {
+				break
+			}
+
+			usersListUpdated = false
+
+			bootstrap.ConnectionsByUser.Mutex.RLock()
+			for userName, userConns := range bootstrap.ConnectionsByUser.SocketConnections {
+				userConns.Mutex.Lock()
+				for conn := range userConns.Connections {
+					err := conn.WriteControl(websocket.PingMessage, []byte("PING"), time.Now().Add(time.Second*10))
+					if err != nil {
+						_ = conn.Close()
+						delete(userConns.Connections, conn)
+						bootstrap.UserConnections.Delete(conn)
+						fmt.Printf("Disconnecting %v\n", userName)
+						usersListUpdated = true
+					}
+				}
+				userConns.Mutex.Unlock()
+			}
+			bootstrap.ConnectionsByUser.Mutex.RUnlock()
+
+			if usersListUpdated {
+				go dispatchUsersList()
+			}
+		}
+	}
 }
