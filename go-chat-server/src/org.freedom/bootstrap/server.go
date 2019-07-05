@@ -8,7 +8,11 @@ import (
 
 type CommandListener func(conn *websocket.Conn, data interface{}) interface{}
 
-type ConnectionsMap map[*websocket.Conn]struct{}
+type connectionData struct {
+	m sync.Mutex
+}
+
+type ConnectionsMap map[*websocket.Conn]connectionData
 
 type UserSocketConnections struct {
 	Mutex       sync.RWMutex
@@ -26,13 +30,13 @@ func (c *connectionsByUser) AddUserConn(conn *websocket.Conn, name string) {
 	conns, ok := c.SocketConnections[name]
 	if ok {
 		conns.Mutex.Lock()
-		conns.Connections[conn] = struct{}{}
+		conns.Connections[conn] = connectionData{}
 		conns.Mutex.Unlock()
 	} else {
 		conns = &UserSocketConnections{
 			Connections: make(ConnectionsMap),
 		}
-		conns.Connections[conn] = struct{}{}
+		conns.Connections[conn] = connectionData{}
 		c.SocketConnections[name] = conns
 	}
 }
@@ -47,8 +51,10 @@ func (c *connectionsByUser) WriteMessageToAll(jsonable interface{}) {
 
 	for _, user := range c.SocketConnections {
 		user.Mutex.RLock()
-		for conn := range user.Connections {
+		for conn, connData := range user.Connections {
+			connData.m.Lock()
 			_ = conn.WriteMessage(websocket.TextMessage, jsonValue)
+			connData.m.Unlock()
 		}
 		user.Mutex.RUnlock()
 	}
