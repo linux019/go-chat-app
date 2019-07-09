@@ -21,7 +21,7 @@ type ChannelsList struct {
 }
 
 type channelJSON struct {
-	IsCommon bool `json:"is_common"`
+	IsPublic bool `json:"isPublic"`
 }
 
 type channelsJSON struct {
@@ -53,7 +53,7 @@ type usersJSON struct {
 
 type channelPeers struct {
 	mutex    sync.RWMutex
-	isCommon bool
+	IsPublic bool
 	peers    []string
 }
 
@@ -64,7 +64,7 @@ type channelMessagesHistory struct {
 	messages channelsMessagesMap
 }
 
-var channelsList = ChannelsList{
+var publicChannelsList = ChannelsList{
 	channels: make(map[string]*channelPeers),
 }
 
@@ -91,12 +91,12 @@ func (c *channelMessagesHistory) AppendMessage(channelName, text, sender string)
 	return &newMessage
 }
 
-func (cl *ChannelsList) AddChannel(name string, isCommon bool) {
+func (cl *ChannelsList) AddChannel(name string, IsPublic bool) {
 	cl.mutex.Lock()
 	defer cl.mutex.Unlock()
 	_, exists := cl.channels[name]
 	if !exists {
-		cl.channels[name] = &channelPeers{isCommon: isCommon}
+		cl.channels[name] = &channelPeers{IsPublic: IsPublic}
 	}
 }
 
@@ -108,8 +108,8 @@ func Setup() {
 	bootstrap.AddCommandListener("POST_MESSAGE", commandStoreUserMessage)
 	bootstrap.AddCommandListener("CREATE_CHANNEL", commandCreateChannel)
 	//bootstrap.AddCommandListener("LIST_USERS", commandListUsers)
-	channelsList.AddChannel("general", true)
-	channelsList.AddChannel("news", true)
+	publicChannelsList.AddChannel("general", true)
+	publicChannelsList.AddChannel("news", true)
 	go checkActiveConnections()
 }
 

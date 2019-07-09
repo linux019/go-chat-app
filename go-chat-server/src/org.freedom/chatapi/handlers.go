@@ -17,13 +17,13 @@ var commandSetUserName bootstrap.CommandListener = func(conn *websocket.Conn, da
 }
 
 var commandListChannels bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
-	channelsList.mutex.RLock()
-	defer channelsList.mutex.RUnlock()
+	publicChannelsList.mutex.RLock()
+	defer publicChannelsList.mutex.RUnlock()
 
 	channels := make(map[string]channelJSON)
-	for name, attributes := range channelsList.channels {
+	for name, attributes := range publicChannelsList.channels {
 		channels[name] = channelJSON{
-			IsCommon: attributes.isCommon,
+			IsPublic: attributes.IsPublic,
 		}
 	}
 
@@ -67,9 +67,9 @@ var commandStoreUserMessage bootstrap.CommandListener = func(conn *websocket.Con
 		fmt.Println(message, exists)
 
 		if len(channelName) > 0 && len(message.(string)) > 0 {
-			channelsList.mutex.RLock()
-			defer channelsList.mutex.RUnlock()
-			channelData, exists := channelsList.channels[channelName]
+			publicChannelsList.mutex.RLock()
+			defer publicChannelsList.mutex.RUnlock()
+			channelData, exists := publicChannelsList.channels[channelName]
 
 			if exists {
 				var user, exists = bootstrap.UserConnections.LoadConnection(conn)
@@ -85,7 +85,7 @@ var commandStoreUserMessage bootstrap.CommandListener = func(conn *websocket.Con
 }
 
 func dispatchChannelMessage(c *channelPeers, channelName string, message *channelMessageJSON) {
-	if c.isCommon {
+	if c.IsPublic {
 		bootstrap.ConnectionsByUser.WriteMessageToAll(&messageJSON{
 			ChannelName: channelName,
 			Message:     *message,
@@ -98,12 +98,12 @@ func dispatchChannelMessage(c *channelPeers, channelName string, message *channe
 func dispatchPublicChannels() {
 	channels := make(map[string]channelJSON)
 
-	channelsList.mutex.RLock()
-	defer channelsList.mutex.RUnlock()
+	publicChannelsList.mutex.RLock()
+	defer publicChannelsList.mutex.RUnlock()
 
-	for name, attributes := range channelsList.channels {
+	for name, attributes := range publicChannelsList.channels {
 		channels[name] = channelJSON{
-			IsCommon: attributes.isCommon,
+			IsPublic: attributes.IsPublic,
 		}
 	}
 
@@ -132,7 +132,7 @@ var commandCreateChannel bootstrap.CommandListener = func(conn *websocket.Conn, 
 	name, result := data.(string)
 
 	if result {
-		channelsList.AddChannel(name, true)
+		publicChannelsList.AddChannel(name, true)
 	}
 
 	go dispatchPublicChannels()
