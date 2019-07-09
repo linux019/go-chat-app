@@ -42,10 +42,6 @@ func (c *connectionsByUser) AddUserConn(conn *websocket.Conn, name string) {
 }
 
 func (c *connectionsByUser) WriteMessageToAll(jsonable interface{}) {
-	jsonValue, err := json.Marshal(jsonable)
-	if err != nil {
-		return
-	}
 	c.Mutex.RLock()
 	defer c.Mutex.RUnlock()
 
@@ -53,7 +49,7 @@ func (c *connectionsByUser) WriteMessageToAll(jsonable interface{}) {
 		user.Mutex.RLock()
 		for conn, connData := range user.Connections {
 			connData.m.Lock()
-			_ = conn.WriteMessage(websocket.TextMessage, jsonValue)
+			_ = conn.WriteJSON(jsonable)
 			connData.m.Unlock()
 		}
 		user.Mutex.RUnlock()
@@ -133,10 +129,7 @@ func ReadSocket(conn *websocket.Conn) {
 					if result {
 						response := cmdHandler(conn, commandData)
 						if response != nil {
-							jsonValue, err := json.Marshal(response)
-							if err == nil {
-								_ = conn.WriteMessage(websocket.TextMessage, jsonValue)
-							}
+							_ = conn.WriteJSON(response)
 						}
 					}
 				}
