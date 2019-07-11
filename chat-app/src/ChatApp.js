@@ -85,39 +85,46 @@ class ChatApp extends React.Component {
     setName = () => this.sendCommand('SET_USERNAME', this.props.userName);
     createChannel = (channel, isPrivate) => this.sendCommand('CREATE_CHANNEL', {channel, isPrivate});
 
-    sendCommand = (command, data) => this.socket && this.socket.send(JSON.stringify({data, command}));
+    sendCommand = (command, data) => {
+        if (this.socket) {
+            this.socket.send(JSON.stringify({data, command}));
+            console.log('WRITE: ', {data, command});
+        }
+    };
 
     onServerData = data => {
         const newState = {};
         const {activeChannel, unreadChannels} = this.state;
 
+        const {channels, messages, message, channelName, users} = data;
+
         if (!this.socket) {
             return;
         }
 
-        if (data.channels) {
-            newState.channels = data.channels;
+        if (channels) {
+            newState.channels = channels;
             if (!activeChannel) {
                 newState.activeChannel = {
-                    name: data.channels[0],
+                    channel: Object.keys(channels)[0],
                     isPrivate: false
                 };
             }
         }
 
         if (this.dialogueCallback) {
-            (data.messages || data.message) && this.dialogueCallback(data);
+            (messages || message) && this.dialogueCallback(data);
         }
 
-        if (data.message && activeChannel && data.channelName !== activeChannel.name) {
+        if (message && activeChannel && channelName !== activeChannel.channel) {
             newState.unreadChannels = {
                 ...unreadChannels,
-                ...{[data.channelName]: true}
+                ...{[channelName]: true}
             }
         }
 
-        if (data.users) {
-            newState.users = data.users;
+        if (users) {
+            newState.users = users;
         }
 
         if (Object.keys(newState).length) {
@@ -133,12 +140,12 @@ class ChatApp extends React.Component {
         }
     }
 
-    setActiveChannel = (name, isPrivate) => {
+    setActiveChannel = (channel, isPrivate) => {
         const unreadChannels = {...this.state.unreadChannels};
-        delete unreadChannels[name];
+        delete unreadChannels[channel];
 
         this.setState({
-            activeChannel: {name, isPrivate},
+            activeChannel: {channel, isPrivate},
             isPrivate,
             unreadChannels
         });
@@ -148,10 +155,13 @@ class ChatApp extends React.Component {
         this.dialogueCallback = callback;
     };
 
-    loadMessages = () => this.sendCommand('GET_CHANNEL_MESSAGES', this.state.activeChannel.name);
+    loadMessages = () => this.sendCommand('GET_CHANNEL_MESSAGES', this.state.activeChannel);
     getUsersList = () => this.sendCommand('LIST_USERS', null);
 
-    sendUserMessage = message => this.sendCommand('POST_MESSAGE', {channel: this.state.activeChannel.name, message});
+    sendUserMessage = message => this.sendCommand('POST_MESSAGE', {
+        ...this.state.activeChannel,
+        message
+    });
 
     askForChannelName = e => {
         e.preventDefault();
@@ -178,7 +188,7 @@ class ChatApp extends React.Component {
                 <Sidebar/>
                 {
                     activeChannel &&
-                    <ChatDialogue key={Object.keys(activeChannel).join()}
+                    <ChatDialogue key={Object.values(activeChannel).join()}
                                   activeChannel={activeChannel}
                                   isPrivate={isPrivate}
                                   setCallback={this.setDialogueCallback}

@@ -3,13 +3,14 @@ package bootstrap
 import (
 	"encoding/json"
 	"github.com/gorilla/websocket"
+	"log"
 	"sync"
 )
 
 type CommandListener func(conn *websocket.Conn, data interface{}) interface{}
 
 type connectionData struct {
-	m sync.Mutex
+	M sync.Mutex
 }
 
 type ConnectionsMap map[*websocket.Conn]connectionData
@@ -42,18 +43,19 @@ func (c *connectionsByUser) AddUserConn(conn *websocket.Conn, name string) {
 }
 
 func (c *connectionsByUser) WriteMessageToAll(jsonable interface{}) {
-	c.Mutex.RLock()
-	defer c.Mutex.RUnlock()
-
-	for _, user := range c.SocketConnections {
-		user.Mutex.RLock()
-		for conn, connData := range user.Connections {
-			connData.m.Lock()
-			_ = conn.WriteJSON(jsonable)
-			connData.m.Unlock()
-		}
-		user.Mutex.RUnlock()
-	}
+	//c.Mutex.RLock()
+	//defer c.Mutex.RUnlock()
+	//
+	//for _, user := range c.SocketConnections {
+	//	user.Mutex.RLock()
+	//	for conn, connData := range user.Connections {
+	//		connData.M.Lock()
+	//		log.Println("WriteMessageToAll")
+	//		_ = conn.WriteJSON(jsonable)
+	//		connData.M.Unlock()
+	//	}
+	//	user.Mutex.RUnlock()
+	//}
 }
 
 func (c *connectionsByUser) GetConnectedUsersStatus() map[string]int {
@@ -129,6 +131,7 @@ func ReadSocket(conn *websocket.Conn) {
 					if result {
 						response := cmdHandler(conn, commandData)
 						if response != nil {
+							log.Println("WriteResponse")
 							_ = conn.WriteJSON(response)
 						}
 					}

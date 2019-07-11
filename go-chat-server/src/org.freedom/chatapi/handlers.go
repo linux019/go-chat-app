@@ -1,6 +1,8 @@
 package chatapi
 
 import (
+	"errors"
+	"fmt"
 	"github.com/gorilla/websocket"
 	"org.freedom/bootstrap"
 )
@@ -32,19 +34,22 @@ var commandListChannels bootstrap.CommandListener = func(conn *websocket.Conn, d
 }
 
 var commandListChannelMessages bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
-	channel, success := data.(string)
-	if !success {
+	var channelName, isPrivate, err = decodeChannelAttributes(data)
+
+	if err != nil {
 		return nil
 	}
 
-	channelMessages.mutex.RLock()
-	defer channelMessages.mutex.RUnlock()
-
-	messages, ok := channelMessages.messages[channel]
-
-	if ok {
-		return messagesJSON{
-			Messages: &messages,
+	if isPrivate {
+		panic("private channels unsupported")
+	} else {
+		channelMessages.mutex.RLock()
+		defer channelMessages.mutex.RUnlock()
+		messages, ok := channelMessages.messages[channelName]
+		if ok {
+			return messagesJSON{
+				Messages: &messages,
+			}
 		}
 	}
 
@@ -56,25 +61,29 @@ var commandStoreUserMessage bootstrap.CommandListener = func(conn *websocket.Con
 	if !success {
 		return nil
 	}
-	channel, exists := valueMap["channel"]
-	if exists {
-		channelName, success := channel.(string)
-		if !success {
-			return nil
-		}
-		message, exists := valueMap["message"]
 
-		if exists && len(channelName) > 0 && len(message.(string)) > 0 {
-			allChannelsList.mutex.RLock()
-			defer allChannelsList.mutex.RUnlock()
-			channelData, exists := allChannelsList.channels[channelName]
+	var channelName, isPrivate, err = decodeChannelAttributes(data)
 
+	if err != nil {
+		return nil
+	}
+
+	if isPrivate {
+		panic("private channels unsupported")
+	}
+
+	message, exists := valueMap["message"]
+
+	if exists && len(channelName) > 0 && len(message.(string)) > 0 {
+		allChannelsList.mutex.RLock()
+		defer allChannelsList.mutex.RUnlock()
+		channelData, exists := allChannelsList.channels[channelName]
+
+		if exists {
+			var user, exists = bootstrap.UserConnections.LoadConnection(conn)
 			if exists {
-				var user, exists = bootstrap.UserConnections.LoadConnection(conn)
-				if exists {
-					message := channelMessages.AppendMessage(channelName, message.(string), user)
-					go dispatchChannelMessage(channelData, channelName, message)
-				}
+				message := channelMessages.AppendMessage(channelName, message.(string), user)
+				go dispatchChannelMessage(channelData, channelName, message)
 			}
 		}
 	}
@@ -136,6 +145,35 @@ var commandCreateChannel bootstrap.CommandListener = func(conn *websocket.Conn, 
 
 	go dispatchPublicChannels()
 	return nil
+}
+
+func decodeChannelAttributes(data interface{}) (channelName string, isPrivate bool, err error) {
+	var (
+		channelData map[string]interface{}
+		channel     interface{}
+	)
+
+	err = errors.New("")
+
+	channelData, success := data.(map[string]interface{})
+
+	if !success {
+		return
+	}
+
+	isPrivate, success = channelData["isPrivate"].(bool)
+	if !success {
+		return
+	}
+
+	channelName, success = channelData["channel"].(string)
+
+	if !success {
+		return
+	}
+
+	err = nil
+	return
 }
 
 //var commandListUsers bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {

@@ -135,7 +135,8 @@ func checkActiveConnections() {
 			bootstrap.ConnectionsByUser.Mutex.RLock()
 			for userName, userConns := range bootstrap.ConnectionsByUser.SocketConnections {
 				userConns.Mutex.Lock()
-				for conn := range userConns.Connections {
+				for conn, connData := range userConns.Connections {
+					connData.M.Lock()
 					err := conn.WriteControl(websocket.PingMessage, []byte("PING"), time.Now().Add(time.Second*10))
 					if err != nil {
 						_ = conn.Close()
@@ -144,6 +145,7 @@ func checkActiveConnections() {
 						fmt.Printf("Disconnecting %v\n", userName)
 						usersListUpdated = true
 					}
+					connData.M.Unlock()
 				}
 				userConns.Mutex.Unlock()
 			}

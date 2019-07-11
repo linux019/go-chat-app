@@ -113,7 +113,7 @@ const ChannelsList = () => (
                                         e.stopPropagation();
                                         setActiveChannel(ch, false);
                                     }}
-                                    className={classnames("collection-item", activeChannel && activeChannel.name === ch && 'active')}>
+                                    className={classnames("collection-item", activeChannel && activeChannel.channel === ch && 'active')}>
                                     {
                                         unreadChannels[ch] &&
                                         <i className="material-icons left tiny light-green-text message">message</i>

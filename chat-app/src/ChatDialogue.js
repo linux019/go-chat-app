@@ -10,7 +10,7 @@ class ChatDialogue extends React.Component {
 
     static propTypes = {
         activeChannel: PropTypes.shape({
-            name: PropTypes.string,
+            channel: PropTypes.string,
             isPrivate: PropTypes.bool,
         }).isRequired,
         loadMessages: PropTypes.func.isRequired,
@@ -24,7 +24,7 @@ class ChatDialogue extends React.Component {
     }
 
     storeMessages = ({messages, message, channelName}) => {
-        if (message && channelName === this.props.activeChannel.name) {
+        if (message && channelName === this.props.activeChannel.channel) {
             messages = [...this.state.messages];
             messages.push(message);
         }
@@ -53,7 +53,7 @@ class ChatDialogue extends React.Component {
         return (
             <div className="dialogue">
                 <div className='chat'>
-                    <div className='chat-header'>{this.props.activeChannel.name}</div>
+                    <div className='chat-header'>{this.props.activeChannel.channel}</div>
                     <div className={'messages'}>
                         {
                             messages.length > 0
