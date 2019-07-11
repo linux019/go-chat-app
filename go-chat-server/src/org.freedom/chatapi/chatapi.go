@@ -64,7 +64,7 @@ type channelMessagesHistory struct {
 	messages channelsMessagesMap
 }
 
-var publicChannelsList = ChannelsList{
+var allChannelsList = ChannelsList{
 	channels: make(map[string]*channelPeers),
 }
 
@@ -108,8 +108,8 @@ func Setup() {
 	bootstrap.AddCommandListener("POST_MESSAGE", commandStoreUserMessage)
 	bootstrap.AddCommandListener("CREATE_CHANNEL", commandCreateChannel)
 	//bootstrap.AddCommandListener("LIST_USERS", commandListUsers)
-	publicChannelsList.AddChannel("general", true)
-	publicChannelsList.AddChannel("news", true)
+	allChannelsList.AddChannel("general", true)
+	allChannelsList.AddChannel("news", true)
 	go checkActiveConnections()
 }
 

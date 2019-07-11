@@ -10,6 +10,7 @@ export const DataContext = React.createContext({});
 class ChatApp extends React.Component {
     state = {
         activeChannel: null,
+        isPrivate: false,
         connected: false,
         channels: [],
         users: {},
@@ -82,7 +83,7 @@ class ChatApp extends React.Component {
 
     getChannels = () => this.sendCommand('GET_CHANNELS', null);
     setName = () => this.sendCommand('SET_USERNAME', this.props.userName);
-    createChannel = channel => this.sendCommand('CREATE_CHANNEL', channel);
+    createChannel = (channel, isPrivate) => this.sendCommand('CREATE_CHANNEL', {channel, isPrivate});
 
     sendCommand = (command, data) => this.socket && this.socket.send(JSON.stringify({data, command}));
 
@@ -97,7 +98,10 @@ class ChatApp extends React.Component {
         if (data.channels) {
             newState.channels = data.channels;
             if (!activeChannel) {
-                newState.activeChannel = data.channels[0];
+                newState.activeChannel = {
+                    name: data.channels[0],
+                    isPrivate: false
+                };
             }
         }
 
@@ -105,7 +109,7 @@ class ChatApp extends React.Component {
             (data.messages || data.message) && this.dialogueCallback(data);
         }
 
-        if (data.message && data.channelName !== activeChannel) {
+        if (data.message && activeChannel && data.channelName !== activeChannel.name) {
             newState.unreadChannels = {
                 ...unreadChannels,
                 ...{[data.channelName]: true}
@@ -129,46 +133,43 @@ class ChatApp extends React.Component {
         }
     }
 
-    setActiveChannel = activeChannel => {
+    setActiveChannel = (name, isPrivate) => {
         const unreadChannels = {...this.state.unreadChannels};
-        delete unreadChannels[activeChannel];
+        delete unreadChannels[name];
 
         this.setState({
-            activeChannel,
+            activeChannel: {name, isPrivate},
+            isPrivate,
             unreadChannels
         });
     };
+
     setDialogueCallback = callback => {
         this.dialogueCallback = callback;
     };
 
-    loadMessages = () => this.sendCommand('GET_CHANNEL_MESSAGES', this.state.activeChannel);
+    loadMessages = () => this.sendCommand('GET_CHANNEL_MESSAGES', this.state.activeChannel.name);
     getUsersList = () => this.sendCommand('LIST_USERS', null);
 
-    sendUserMessage = message => this.sendCommand('POST_MESSAGE', {channel: this.state.activeChannel, message});
+    sendUserMessage = message => this.sendCommand('POST_MESSAGE', {channel: this.state.activeChannel.name, message});
 
     askForChannelName = e => {
         e.preventDefault();
         e.stopPropagation();
         const channel = window.prompt('Type a channel name');
         if (channel && channel.trim().length) {
-            this.createChannel(channel);
+            this.createChannel(channel, false);
         }
-    };
-
-    openChannel = userName => {
-
     };
 
     render() {
         const {userName} = this.props;
-        const {channels, connected, activeChannel, unreadChannels, users} = this.state;
+        const {channels, connected, activeChannel, isPrivate, unreadChannels, users} = this.state;
         const contextData = {
             userName, connected, channels, activeChannel, unreadChannels, users,
             askForChannelName: this.askForChannelName,
             setActiveChannel: this.setActiveChannel,
             getUsersList: this.getUsersList,
-            openChannel: this.openChannel,
         };
 
         return (
@@ -177,8 +178,9 @@ class ChatApp extends React.Component {
                 <Sidebar/>
                 {
                     activeChannel &&
-                    <ChatDialogue key={activeChannel}
+                    <ChatDialogue key={Object.keys(activeChannel).join()}
                                   activeChannel={activeChannel}
+                                  isPrivate={isPrivate}
                                   setCallback={this.setDialogueCallback}
                                   sendUserMessage={this.sendUserMessage}
                                   loadMessages={this.loadMessages}

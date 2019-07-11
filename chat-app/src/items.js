@@ -53,7 +53,7 @@ export const WelcomeScreen = ({name, setData}) => (
 export const Sidebar = () => (
     <DataContext.Consumer>
         {
-            ({connected, getUsersList, askForChannelName, users, openChannel}) => (
+            ({connected, getUsersList, askForChannelName, users, setActiveChannel}) => (
                 <div className='sidebar'>
                     <GitHubLink/>
                     <UserNameCard/>
@@ -72,7 +72,7 @@ export const Sidebar = () => (
 
                     {
                         connected &&
-                        <UsersList {...{getUsersList, users, openChannel}}/>
+                        <UsersList {...{getUsersList, users, setActiveChannel}}/>
                     }
                 </div>
             )
@@ -111,9 +111,9 @@ const ChannelsList = () => (
                                     onClick={e => {
                                         e.preventDefault();
                                         e.stopPropagation();
-                                        setActiveChannel(ch);
+                                        setActiveChannel(ch, false);
                                     }}
-                                    className={classnames("collection-item", activeChannel === ch && 'active')}>
+                                    className={classnames("collection-item", activeChannel && activeChannel.name === ch && 'active')}>
                                     {
                                         unreadChannels[ch] &&
                                         <i className="material-icons left tiny light-green-text message">message</i>

@@ -1,7 +1,6 @@
 package chatapi
 
 import (
-	"fmt"
 	"github.com/gorilla/websocket"
 	"org.freedom/bootstrap"
 )
@@ -17,11 +16,11 @@ var commandSetUserName bootstrap.CommandListener = func(conn *websocket.Conn, da
 }
 
 var commandListChannels bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
-	publicChannelsList.mutex.RLock()
-	defer publicChannelsList.mutex.RUnlock()
+	allChannelsList.mutex.RLock()
+	defer allChannelsList.mutex.RUnlock()
 
 	channels := make(map[string]channelJSON)
-	for name, attributes := range publicChannelsList.channels {
+	for name, attributes := range allChannelsList.channels {
 		channels[name] = channelJSON{
 			IsPublic: attributes.IsPublic,
 		}
@@ -64,12 +63,11 @@ var commandStoreUserMessage bootstrap.CommandListener = func(conn *websocket.Con
 			return nil
 		}
 		message, exists := valueMap["message"]
-		fmt.Println(message, exists)
 
-		if len(channelName) > 0 && len(message.(string)) > 0 {
-			publicChannelsList.mutex.RLock()
-			defer publicChannelsList.mutex.RUnlock()
-			channelData, exists := publicChannelsList.channels[channelName]
+		if exists && len(channelName) > 0 && len(message.(string)) > 0 {
+			allChannelsList.mutex.RLock()
+			defer allChannelsList.mutex.RUnlock()
+			channelData, exists := allChannelsList.channels[channelName]
 
 			if exists {
 				var user, exists = bootstrap.UserConnections.LoadConnection(conn)
@@ -98,10 +96,10 @@ func dispatchChannelMessage(c *channelPeers, channelName string, message *channe
 func dispatchPublicChannels() {
 	channels := make(map[string]channelJSON)
 
-	publicChannelsList.mutex.RLock()
-	defer publicChannelsList.mutex.RUnlock()
+	allChannelsList.mutex.RLock()
+	defer allChannelsList.mutex.RUnlock()
 
-	for name, attributes := range publicChannelsList.channels {
+	for name, attributes := range allChannelsList.channels {
 		channels[name] = channelJSON{
 			IsPublic: attributes.IsPublic,
 		}
@@ -132,7 +130,8 @@ var commandCreateChannel bootstrap.CommandListener = func(conn *websocket.Conn, 
 	name, result := data.(string)
 
 	if result {
-		publicChannelsList.AddChannel(name, true)
+
+		allChannelsList.AddChannel(name, true)
 	}
 
 	go dispatchPublicChannels()

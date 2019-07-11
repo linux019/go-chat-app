@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 class UsersList extends React.Component {
     static propTypes = {
         getUsersList: PropTypes.func.isRequired,
-        openChannel: PropTypes.func.isRequired,
+        setActiveChannel: PropTypes.func.isRequired,
         users: PropTypes.object.isRequired,
     };
 
@@ -13,7 +13,7 @@ class UsersList extends React.Component {
     }
 
     render() {
-        const {users, openChannel} = this.props;
+        const {users, setActiveChannel} = this.props;
         return (
             <ul className="collection with-header users">
                 <li className="collection-header"><h6>Users</h6></li>
@@ -24,7 +24,7 @@ class UsersList extends React.Component {
                                 onClick={e => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    openChannel(name);
+                                    setActiveChannel(name, true);
                                 }}
                                 className="collection-item">
                                 {

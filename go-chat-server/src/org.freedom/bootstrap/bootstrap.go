@@ -19,6 +19,7 @@ type HttpHandler struct {
 
 var signals = make(chan os.Signal, 1)
 var OsSignal os.Signal = nil
+
 var mux = new(http.ServeMux)
 
 var server = http.Server{

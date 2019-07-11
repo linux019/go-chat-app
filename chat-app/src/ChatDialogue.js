@@ -9,7 +9,10 @@ class ChatDialogue extends React.Component {
     };
 
     static propTypes = {
-        activeChannel: PropTypes.string.isRequired,
+        activeChannel: PropTypes.shape({
+            name: PropTypes.string,
+            isPrivate: PropTypes.bool,
+        }).isRequired,
         loadMessages: PropTypes.func.isRequired,
         setCallback: PropTypes.func.isRequired,
         sendUserMessage: PropTypes.func.isRequired,
@@ -21,7 +24,7 @@ class ChatDialogue extends React.Component {
     }
 
     storeMessages = ({messages, message, channelName}) => {
-        if (message && channelName === this.props.activeChannel) {
+        if (message && channelName === this.props.activeChannel.name) {
             messages = [...this.state.messages];
             messages.push(message);
         }
@@ -37,10 +40,12 @@ class ChatDialogue extends React.Component {
     onTextChange = e => this.setState({text: e.target.value});
 
     onSubmit = e => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.props.sendUserMessage(this.state.text);
-        this.setState({text: ''});
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            e.stopPropagation();
+            this.props.sendUserMessage(this.state.text);
+            this.setState({text: ''});
+        }
     };
 
     render() {
@@ -48,7 +53,7 @@ class ChatDialogue extends React.Component {
         return (
             <div className="dialogue">
                 <div className='chat'>
-                    <div className='chat-header'>{this.props.activeChannel}</div>
+                    <div className='chat-header'>{this.props.activeChannel.name}</div>
                     <div className={'messages'}>
                         {
                             messages.length > 0
@@ -60,8 +65,8 @@ class ChatDialogue extends React.Component {
                     <div className={'text-input'}>
                         <textarea value={text}
                                   onChange={this.onTextChange}
+                                  onKeyDown={this.onSubmit}
                         />
-                        <button onClick={this.onSubmit} disabled={!text}>Submit</button>
                     </div>
                 </div>
             </div>
