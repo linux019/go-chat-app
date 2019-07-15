@@ -3,7 +3,6 @@ package bootstrap
 import (
 	"encoding/json"
 	"github.com/gorilla/websocket"
-	"log"
 	"sync"
 )
 
@@ -102,12 +101,14 @@ func AddCommandListener(command string, f CommandListener) {
 	serverCommandListeners[command] = f
 }
 
-func ReadSocket(conn *websocket.Conn) {
+func readSocket(conn *websocket.Conn) {
 	for {
 		messageType, data, err := conn.ReadMessage()
+
 		if err != nil {
 			break
 		}
+
 		if (messageType == websocket.BinaryMessage || messageType == websocket.TextMessage) && data != nil {
 			var v interface{}
 			err := json.Unmarshal(data, &v)
@@ -131,7 +132,6 @@ func ReadSocket(conn *websocket.Conn) {
 					if result {
 						response := cmdHandler(conn, commandData)
 						if response != nil {
-							log.Println("WriteResponse")
 							_ = conn.WriteJSON(response)
 						}
 					}

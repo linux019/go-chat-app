@@ -1,8 +1,6 @@
 package chatapi
 
 import (
-	"errors"
-	"fmt"
 	"github.com/gorilla/websocket"
 	"org.freedom/bootstrap"
 )
@@ -147,48 +145,3 @@ var commandCreateChannel bootstrap.CommandListener = func(conn *websocket.Conn, 
 	return nil
 }
 
-func decodeChannelAttributes(data interface{}) (channelName string, isPrivate bool, err error) {
-	var (
-		channelData map[string]interface{}
-		channel     interface{}
-	)
-
-	err = errors.New("")
-
-	channelData, success := data.(map[string]interface{})
-
-	if !success {
-		return
-	}
-
-	isPrivate, success = channelData["isPrivate"].(bool)
-	if !success {
-		return
-	}
-
-	channelName, success = channelData["channel"].(string)
-
-	if !success {
-		return
-	}
-
-	err = nil
-	return
-}
-
-//var commandListUsers bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
-//
-//	users := usersJSON{
-//		Users: make(map[string]userJSON),
-//	}
-//
-//	userConns := bootstrap.ConnectionsByUser.GetConnectedUsersStatus()
-//
-//	for name, connCount := range userConns {
-//		users.Users[name] = userJSON{
-//			Online: connCount > 0,
-//		}
-//	}
-//
-//	return users
-//}

@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"context"
+	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
@@ -11,13 +12,6 @@ import (
 	"syscall"
 )
 
-type ApiHandler = func(r *http.Request) (status int, response *[]byte, e error)
-
-type HttpHandler struct {
-	ApiHandlers map[string]ApiHandler
-}
-
-var signals = make(chan os.Signal, 1)
 var OsSignal os.Signal = nil
 
 var mux = new(http.ServeMux)
@@ -35,6 +29,10 @@ var webSocketUpgrader = websocket.Upgrader{
 	},
 }
 
+var PendingConnections PendingConnectionsType
+
+var MaintenanceRoutines MaintenanceRoutine
+
 func (h HttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	conn, err := webSocketUpgrader.Upgrade(w, r, nil)
 
@@ -42,7 +40,39 @@ func (h HttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	go ReadSocket(conn)
+	fmt.Println("New conn", conn.RemoteAddr().String())
+
+	if PendingConnections.GetConnCount() < constants.MaxHandshakeConnections {
+		PendingConnections.AddConnection(conn)
+		go readSocket(conn)
+	} else {
+		_ = conn.Close()
+	}
+}
+
+var signals = make(chan os.Signal, 1)
+
+func ListenForSignals() {
+	OsSignal = <-signals
+	log.Println("Terminating")
+	MaintenanceRoutines.TerminateAll()
+	_ = server.Shutdown(context.Background())
+}
+
+func StartHttpServer() {
+	signal.Notify(signals, syscall.SIGTERM, syscall.SIGINT)
+
+	PendingConnections.Init()
+	MaintenanceRoutines.StartFunc(PendingConnections.CheckPendingConnections)
+
+	go func() {
+		log.Fatal(server.ListenAndServe())
+	}()
+
+}
+
+func AddEndPoints(endPoint string, handlers *HttpHandler) {
+	mux.Handle(endPoint, handlers)
 }
 
 //worker := h.ApiHandlers[strings.ToLower(r.Method)]
@@ -81,21 +111,3 @@ func (h HttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 //	w.WriteHeader(http.StatusNotFound)
 //	_, _ = w.Write([]byte("Invalid Endpoint"))
 //}
-
-func ListenForSignals() {
-	OsSignal = <-signals
-	log.Println("Terminating")
-	_ = server.Shutdown(context.Background())
-}
-
-func StartHttpServer() {
-	signal.Notify(signals, syscall.SIGTERM, syscall.SIGINT)
-
-	go func() {
-		log.Fatal(server.ListenAndServe())
-	}()
-}
-
-func AddEndPoints(endPoint string, handlers *HttpHandler) {
-	mux.Handle(endPoint, handlers)
-}
