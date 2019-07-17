@@ -12,41 +12,41 @@ type channelData struct {
 	messages []channelMessageJSON
 }
 
-type user struct {
-	m        sync.Mutex
+type User struct {
+	m        sync.RWMutex
 	conns    []*websocket.Conn
 	channels map[string]*channelData
 }
 
 type usersList struct {
 	m     sync.Mutex
-	users map[string]user
+	users map[string]User
 }
 
-func (ul *usersList) LoadStoreUser(name string) *user {
+func (ul *usersList) LoadStoreUser(name string) *User {
 	ul.m.Lock()
 	defer ul.m.Unlock()
 
 	if ul.users == nil {
-		ul.users = make(map[string]user)
+		ul.users = make(map[string]User)
 	}
 	_, ok := ul.users[name]
 
 	if !ok {
-		ul.users[name] = user{}
+		ul.users[name] = User{}
 	}
 	result, _ := ul.users[name]
 
 	return &result
 }
 
-func (u *user) AddConn(conn *websocket.Conn) {
+func (u *User) AddConn(conn *websocket.Conn) {
 	u.m.Lock()
 	u.conns = append(u.conns, conn)
 	u.m.Unlock()
 }
 
-func (u *user) RemoveConn(conn *websocket.Conn) {
+func (u *User) RemoveConn(conn *websocket.Conn) {
 	go func() {
 		u.m.Lock()
 		for i, c := range u.conns {
@@ -61,11 +61,13 @@ func (u *user) RemoveConn(conn *websocket.Conn) {
 	}()
 }
 
-type UserSocketConnection struct {
-	user *user
+type userSocketConnection struct {
+	connMap sync.Map
 }
 
-//-------------
+func (c* userSocketConnection) Store(conn *websocket.Conn, user *User) {
+	c.connMap.Store(conn, user)
+}
 
 type ChannelsList struct {
 	mutex    sync.RWMutex

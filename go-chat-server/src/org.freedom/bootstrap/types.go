@@ -67,6 +67,17 @@ func (pc *pendingConnectionsType) GetConnCount() int {
 	return pc.conn.Len()
 }
 
+func (pc *pendingConnectionsType) RemoveConn(conn *websocket.Conn) {
+	pc.m.Lock()
+	defer pc.m.Unlock()
+	for connIter := pc.conn.Front(); connIter != nil; connIter = conn.Next() {
+		if connIter.Value.(pendingConnection).conn == conn {
+			pc.conn.Remove(connIter)
+			break
+		}
+	}
+}
+
 func (pc *pendingConnectionsType) CheckPendingConnections(signalChannel <-chan void, args ...interface{}) {
 	var timeout <-chan time.Time
 

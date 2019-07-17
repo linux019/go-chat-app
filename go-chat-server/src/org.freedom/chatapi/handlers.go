@@ -8,8 +8,11 @@ import (
 var commandSetUserName bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
 	name, result := data.(string)
 	if result {
-
-		//bootstrap.ConnectionsByUser.AddUserConn(conn, name)
+		bootstrap.PendingConnections.RemoveConn(conn)
+		pUser := users.LoadStoreUser(name)
+		pUser.AddConn(conn)
+		userSocketConnections.Store(conn, pUser)
+		//bootstrap.ConnectionsByUser.AddUserConn(conn, pUser)
 		//bootstrap.UserConnections.StoreConnection(conn, name)
 		//go dispatchUsersList()
 	}

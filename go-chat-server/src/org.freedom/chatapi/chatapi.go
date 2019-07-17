@@ -9,9 +9,9 @@ import (
 	"time"
 )
 
-//-----------
+
 var users usersList
-//-----------
+var userSocketConnections userSocketConnection
 
 var allChannelsList = ChannelsList{
 	channels: make(map[string]*channelPeers),
