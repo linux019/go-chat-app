@@ -1,19 +1,71 @@
 package chatapi
 
 import (
+	"github.com/gorilla/websocket"
 	"sync"
 	"time"
 )
 
-//type channelData struct {
-//	IsPublic bool
-//	messages []channelMessageJSON
-//}
-//
-//type User struct {
-//	name     string
-//	channels map[string]*channelData
-//}
+//-----------
+type channelData struct {
+	IsPublic bool
+	messages []channelMessageJSON
+}
+
+type user struct {
+	m        sync.Mutex
+	conns    []*websocket.Conn
+	channels map[string]*channelData
+}
+
+type usersList struct {
+	m     sync.Mutex
+	users map[string]user
+}
+
+func (ul *usersList) LoadStoreUser(name string) *user {
+	ul.m.Lock()
+	defer ul.m.Unlock()
+
+	if ul.users == nil {
+		ul.users = make(map[string]user)
+	}
+	_, ok := ul.users[name]
+
+	if !ok {
+		ul.users[name] = user{}
+	}
+	result, _ := ul.users[name]
+
+	return &result
+}
+
+func (u *user) AddConn(conn *websocket.Conn) {
+	u.m.Lock()
+	u.conns = append(u.conns, conn)
+	u.m.Unlock()
+}
+
+func (u *user) RemoveConn(conn *websocket.Conn) {
+	go func() {
+		u.m.Lock()
+		for i, c := range u.conns {
+			if c == conn {
+				copy(u.conns[i:], u.conns[i+1:])
+				u.conns = u.conns[:len(u.conns)-1]
+				break
+			}
+		}
+		u.m.Unlock()
+		_ = conn.Close()
+	}()
+}
+
+type UserSocketConnection struct {
+	user *user
+}
+
+//-------------
 
 type ChannelsList struct {
 	mutex    sync.RWMutex

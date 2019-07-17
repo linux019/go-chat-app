@@ -29,7 +29,7 @@ var webSocketUpgrader = websocket.Upgrader{
 	},
 }
 
-var PendingConnections PendingConnectionsType
+var PendingConnections pendingConnectionsType
 
 var MaintenanceRoutines MaintenanceRoutine
 

@@ -47,12 +47,12 @@ type pendingConnection struct {
 	time int64
 }
 
-type PendingConnectionsType struct {
+type pendingConnectionsType struct {
 	conn list.List
 	m    sync.RWMutex
 }
 
-func (pc *PendingConnectionsType) AddConnection(conn *websocket.Conn) {
+func (pc *pendingConnectionsType) AddConnection(conn *websocket.Conn) {
 	pc.m.Lock()
 	defer pc.m.Unlock()
 	pc.conn.PushBack(pendingConnection{
@@ -61,13 +61,13 @@ func (pc *PendingConnectionsType) AddConnection(conn *websocket.Conn) {
 	})
 }
 
-func (pc *PendingConnectionsType) GetConnCount() int {
+func (pc *pendingConnectionsType) GetConnCount() int {
 	pc.m.RLock()
 	defer pc.m.RUnlock()
 	return pc.conn.Len()
 }
 
-func (pc *PendingConnectionsType) CheckPendingConnections(signalChannel <-chan void, args ...interface{}) {
+func (pc *pendingConnectionsType) CheckPendingConnections(signalChannel <-chan void, args ...interface{}) {
 	var timeout <-chan time.Time
 
 	for {
@@ -97,6 +97,6 @@ func (pc *PendingConnectionsType) CheckPendingConnections(signalChannel <-chan v
 	}
 }
 
-func (pc *PendingConnectionsType) Init() {
+func (pc *pendingConnectionsType) Init() {
 	pc.conn.Init()
 }

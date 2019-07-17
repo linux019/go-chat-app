@@ -8,9 +8,10 @@ import (
 var commandSetUserName bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
 	name, result := data.(string)
 	if result {
-		bootstrap.ConnectionsByUser.AddUserConn(conn, name)
-		bootstrap.UserConnections.StoreConnection(conn, name)
-		go dispatchUsersList()
+
+		//bootstrap.ConnectionsByUser.AddUserConn(conn, name)
+		//bootstrap.UserConnections.StoreConnection(conn, name)
+		//go dispatchUsersList()
 	}
 	return commandListChannels(conn, nil)
 }

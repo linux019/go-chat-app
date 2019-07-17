@@ -9,11 +9,9 @@ import (
 	"time"
 )
 
-var wsHandlers = bootstrap.HttpHandler{
-	ApiHandlers: map[string]bootstrap.ApiHandler{
-		"get": wsHandler,
-	},
-}
+//-----------
+var users usersList
+//-----------
 
 var allChannelsList = ChannelsList{
 	channels: make(map[string]*channelPeers),
@@ -24,7 +22,11 @@ var channelMessages = channelMessagesHistory{
 }
 
 func Setup() {
-	bootstrap.AddEndPoints("/ws", &wsHandlers)
+	bootstrap.AddEndPoints("/ws", &bootstrap.HttpHandler{
+		ApiHandlers: map[string]bootstrap.ApiHandler{
+			"get": wsHandler,
+		},
+	})
 	bootstrap.AddCommandListener("SET_USERNAME", commandSetUserName)
 	bootstrap.AddCommandListener("GET_CHANNELS", commandListChannels)
 	bootstrap.AddCommandListener("GET_CHANNEL_MESSAGES", commandListChannelMessages)
