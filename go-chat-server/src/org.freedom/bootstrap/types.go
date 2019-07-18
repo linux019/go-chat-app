@@ -70,7 +70,7 @@ func (pc *pendingConnectionsType) GetConnCount() int {
 func (pc *pendingConnectionsType) RemoveConn(conn *websocket.Conn) {
 	pc.m.Lock()
 	defer pc.m.Unlock()
-	for connIter := pc.conn.Front(); connIter != nil; connIter = conn.Next() {
+	for connIter := pc.conn.Front(); connIter != nil; connIter = connIter.Next() {
 		if connIter.Value.(pendingConnection).conn == conn {
 			pc.conn.Remove(connIter)
 			break

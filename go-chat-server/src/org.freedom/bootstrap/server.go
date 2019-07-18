@@ -24,7 +24,7 @@ type connectionsByUser struct {
 	SocketConnections map[string]*UserSocketConnections
 }
 
-func (c *connectionsByUser) AddUserConn(conn *websocket.Conn, pUser *User) {
+//func (c *connectionsByUser) AddUserConn(conn *websocket.Conn, pUser *User) {
 	//c.Mutex.Lock()
 	//defer c.Mutex.Unlock()
 	//conns, ok := c.SocketConnections[name]
@@ -39,7 +39,7 @@ func (c *connectionsByUser) AddUserConn(conn *websocket.Conn, pUser *User) {
 	//	conns.Connections[conn] = connectionData{}
 	//	c.SocketConnections[name] = conns
 	//}
-}
+//}
 
 func (c *connectionsByUser) WriteMessageToAll(jsonable interface{}) {
 	//c.Mutex.RLock()

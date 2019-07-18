@@ -63,10 +63,49 @@ func (u *User) RemoveConn(conn *websocket.Conn) {
 
 type userSocketConnection struct {
 	connMap sync.Map
+	//ch      chan interface{}
 }
 
-func (c* userSocketConnection) Store(conn *websocket.Conn, user *User) {
+/*type debouncedWriter struct {
+	incoming chan []interface{}
+	b        bytes.Buffer
+}
+
+func (d *debouncedWriter) Write(line []interface{}) (int, error) {
+	go func() { d.incoming <- line }()
+	return len(line), nil
+}
+
+func DebouncedWriter(w io.Writer, d time.Duration) io.Writer {
+	dwr := &debouncedWriter{
+		incoming: make(chan []interface{}),
+	}
+
+	go func() {
+		t := time.NewTimer(d)
+		t.Stop()
+
+		for {
+			select {
+			case line := <-dwr.incoming:
+				dwr.b.Write(line)
+				t.Reset(d)
+			case <-t.C:
+				w.Write(dwr.b.Bytes())
+			}
+		}
+	}()
+
+
+	return dwr
+}
+*/
+func (c *userSocketConnection) Store(conn *websocket.Conn, user *User) {
 	c.connMap.Store(conn, user)
+}
+
+func (c *userSocketConnection) DispatchToAll(data interface{}) {
+	//c.ch <- data
 }
 
 type ChannelsList struct {

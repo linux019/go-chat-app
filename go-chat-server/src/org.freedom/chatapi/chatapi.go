@@ -9,7 +9,6 @@ import (
 	"time"
 )
 
-
 var users usersList
 var userSocketConnections userSocketConnection
 
@@ -108,4 +107,19 @@ func decodeChannelAttributes(data interface{}) (channelName string, isPrivate bo
 
 	err = nil
 	return
+}
+
+func debounceWritePacket(ch <-chan interface{}) {
+	var data interface{}
+
+	for {
+		select {
+		case data = <-ch:
+		case <-time.After(time.Second):
+			break
+		}
+	}
+	//if data != nil {
+		//boo
+	//}
 }
