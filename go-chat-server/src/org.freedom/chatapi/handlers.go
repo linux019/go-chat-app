@@ -12,6 +12,7 @@ var commandSetUserName bootstrap.CommandListener = func(conn *websocket.Conn, da
 		pUser := users.LoadStoreUser(name)
 		pUser.AddConn(conn)
 		userSocketConnections.Store(conn, pUser)
+		userSocketConnections.ddw.
 		//bootstrap.ConnectionsByUser.AddUserConn(conn, pUser)
 		//bootstrap.UserConnections.StoreConnection(conn, name)
 		//go dispatchUsersList()

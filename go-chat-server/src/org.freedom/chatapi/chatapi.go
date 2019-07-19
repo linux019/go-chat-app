@@ -21,6 +21,7 @@ var channelMessages = channelMessagesHistory{
 }
 
 func Setup() {
+	userSocketConnections.ddw = createDebouncedWriter(time.Millisecond * 500, userSocketConnections.DispatchToAll)
 	bootstrap.AddEndPoints("/ws", &bootstrap.HttpHandler{
 		ApiHandlers: map[string]bootstrap.ApiHandler{
 			"get": wsHandler,

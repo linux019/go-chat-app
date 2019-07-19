@@ -62,23 +62,26 @@ func (u *User) RemoveConn(conn *websocket.Conn) {
 }
 
 type userSocketConnection struct {
+	m       sync.RWMutex
 	connMap sync.Map
-	//ch      chan interface{}
+	ddw     *debounceDataWriter
 }
 
-/*type debouncedWriter struct {
-	incoming chan []interface{}
-	b        bytes.Buffer
+type debounceDataWriter struct {
+	dataCh chan []interface{}
+	acc    interface{}
 }
 
-func (d *debouncedWriter) Write(line []interface{}) (int, error) {
-	go func() { d.incoming <- line }()
+func (d *debounceDataWriter) Write(line []interface{}) (int, error) {
+	go func() {
+		d.dataCh <- line
+	}()
 	return len(line), nil
 }
 
-func DebouncedWriter(w io.Writer, d time.Duration) io.Writer {
-	dwr := &debouncedWriter{
-		incoming: make(chan []interface{}),
+func createDebouncedWriter(d time.Duration, callback func(data interface{})) *debounceDataWriter {
+	dwr := &debounceDataWriter{
+		dataCh: make(chan []interface{}),
 	}
 
 	go func() {
@@ -87,25 +90,29 @@ func DebouncedWriter(w io.Writer, d time.Duration) io.Writer {
 
 		for {
 			select {
-			case line := <-dwr.incoming:
-				dwr.b.Write(line)
+			case dwr.acc = <-dwr.dataCh:
 				t.Reset(d)
 			case <-t.C:
-				w.Write(dwr.b.Bytes())
+				callback(dwr.acc)
 			}
 		}
 	}()
 
-
 	return dwr
 }
-*/
+
 func (c *userSocketConnection) Store(conn *websocket.Conn, user *User) {
 	c.connMap.Store(conn, user)
 }
 
 func (c *userSocketConnection) DispatchToAll(data interface{}) {
-	//c.ch <- data
+	c.m.RLock()
+	defer c.m.Unlock()
+	c.connMap.Range(func(conn, user interface{}) bool {
+		pConn := conn.(*websocket.Conn)
+		_ = pConn.WriteJSON(data)
+		return true
+	})
 }
 
 type ChannelsList struct {
