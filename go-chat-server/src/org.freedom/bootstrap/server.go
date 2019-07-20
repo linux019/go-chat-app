@@ -19,11 +19,6 @@ type UserSocketConnections struct {
 	Connections ConnectionsMap
 }
 
-type connectionsByUser struct {
-	Mutex             sync.RWMutex
-	SocketConnections map[string]*UserSocketConnections
-}
-
 //func (c *connectionsByUser) AddUserConn(conn *websocket.Conn, pUser *User) {
 	//c.Mutex.Lock()
 	//defer c.Mutex.Unlock()
@@ -41,60 +36,29 @@ type connectionsByUser struct {
 	//}
 //}
 
-func (c *connectionsByUser) WriteMessageToAll(jsonable interface{}) {
-	//c.Mutex.RLock()
-	//defer c.Mutex.RUnlock()
-	//
-	//for _, user := range c.SocketConnections {
-	//	user.Mutex.RLock()
-	//	for conn, connData := range user.Connections {
-	//		connData.M.Lock()
-	//		log.Println("WriteMessageToAll")
-	//		_ = conn.WriteJSON(jsonable)
-	//		connData.M.Unlock()
-	//	}
-	//	user.Mutex.RUnlock()
-	//}
-}
 
-func (c *connectionsByUser) GetConnectedUsersStatus() map[string]int {
-	c.Mutex.RLock()
-	defer c.Mutex.RUnlock()
-	var users = make(map[string]int)
-	for userName, connections := range c.SocketConnections {
-		connections.Mutex.RLock()
-		users[userName] = len(connections.Connections)
-		connections.Mutex.RUnlock()
-	}
 
-	return users
-}
-
-var ConnectionsByUser = connectionsByUser{
-	SocketConnections: make(map[string]*UserSocketConnections),
-}
-
-type UserConnection struct {
-	sync.Map
-}
-
-func (uc *UserConnection) StoreConnection(conn *websocket.Conn, userName string) (name string, loaded bool) {
-	v, loaded := uc.LoadOrStore(conn, userName)
-	if loaded {
-		name = v.(string)
-	}
-	return
-}
-
-func (uc *UserConnection) LoadConnection(conn *websocket.Conn) (name string, ok bool) {
-	v, ok := uc.Load(conn)
-	if ok {
-		name = v.(string)
-	}
-	return
-}
-
-var UserConnections = UserConnection{}
+//type UserConnection struct {
+//	sync.Map
+//}
+//
+//func (uc *UserConnection) StoreConnection(conn *websocket.Conn, userName string) (name string, loaded bool) {
+//	v, loaded := uc.LoadOrStore(conn, userName)
+//	if loaded {
+//		name = v.(string)
+//	}
+//	return
+//}
+//
+//func (uc *UserConnection) LoadConnection(conn *websocket.Conn) (name string, ok bool) {
+//	v, ok := uc.Load(conn)
+//	if ok {
+//		name = v.(string)
+//	}
+//	return
+//}
+//
+//var UserConnections = UserConnection{}
 var serverCommandListeners = make(map[string]CommandListener)
 
 func AddCommandListener(command string, f CommandListener) {

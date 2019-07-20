@@ -12,9 +12,8 @@ import (
 	"syscall"
 )
 
-var OsSignal os.Signal = nil
-
 var mux = new(http.ServeMux)
+var NetworkMessagesChannel = make(chan NetworkMessage)
 
 var server = http.Server{
 	Addr:    constants.ServerAddress,
@@ -64,6 +63,7 @@ func StartHttpServer() {
 
 	PendingConnections.Init()
 	MaintenanceRoutines.StartFunc(PendingConnections.CheckPendingConnections)
+	MaintenanceRoutines.StartFunc(networkWriter)
 
 	go func() {
 		log.Fatal(server.ListenAndServe())
@@ -73,6 +73,20 @@ func StartHttpServer() {
 
 func AddEndPoints(endPoint string, handlers *HttpHandler) {
 	mux.Handle(endPoint, handlers)
+}
+
+func networkWriter(signalChannel <-chan Void, args ...interface{}) {
+	var m NetworkMessage
+	for {
+		select {
+
+		case <-signalChannel:
+			break
+
+		case m = <-NetworkMessagesChannel:
+			_ = m.Conn.WriteJSON(m.Jsonable)
+		}
+	}
 }
 
 //worker := h.ApiHandlers[strings.ToLower(r.Method)]

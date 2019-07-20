@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-type void struct{}
+type Void struct{}
 
 type ApiHandler = func(r *http.Request) (status int, response *[]byte, e error)
 
@@ -21,14 +21,14 @@ type HttpHandler struct {
 
 type MaintenanceRoutine struct {
 	blocker atomic.Value
-	signals []chan void
+	signals []chan Void
 }
 
-func (m *MaintenanceRoutine) StartFunc(f func(signalChannel <-chan void, args ...interface{})) {
-	ch := make(chan void)
+func (m *MaintenanceRoutine) StartFunc(f func(signalChannel <-chan Void, args ...interface{}), args ...interface{}) {
+	ch := make(chan Void)
 	m.signals = append(m.signals, ch)
 	m.blocker.Store(false)
-	go f(ch)
+	go f(ch, args)
 }
 
 func (m *MaintenanceRoutine) TerminateAll() {
@@ -36,10 +36,15 @@ func (m *MaintenanceRoutine) TerminateAll() {
 		m.blocker.Store(true)
 		defer m.blocker.Store(false)
 		for _, ch := range m.signals {
-			ch <- void{}
+			ch <- Void{}
 			close(ch)
 		}
 	}
+}
+
+type NetworkMessage struct {
+	Conn     *websocket.Conn
+	Jsonable interface{}
 }
 
 type pendingConnection struct {
@@ -78,7 +83,7 @@ func (pc *pendingConnectionsType) RemoveConn(conn *websocket.Conn) {
 	}
 }
 
-func (pc *pendingConnectionsType) CheckPendingConnections(signalChannel <-chan void, args ...interface{}) {
+func (pc *pendingConnectionsType) CheckPendingConnections(signalChannel <-chan Void, args ...interface{}) {
 	var timeout <-chan time.Time
 
 	for {
