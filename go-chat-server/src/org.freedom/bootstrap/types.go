@@ -43,8 +43,10 @@ func (m *MaintenanceRoutine) TerminateAll() {
 }
 
 type NetworkMessage struct {
-	Conn     *websocket.Conn
-	Jsonable interface{}
+	Conn      *websocket.Conn
+	IsControl bool
+	Jsonable  interface{}
+	ResultCh  chan error
 }
 
 type pendingConnection struct {

@@ -10,7 +10,10 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
+
+//var OsSignal os.Signal = nil
 
 var mux = new(http.ServeMux)
 var NetworkMessagesChannel = make(chan NetworkMessage)
@@ -52,7 +55,7 @@ func (h HttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 var signals = make(chan os.Signal, 1)
 
 func ListenForSignals() {
-	OsSignal = <-signals
+	_ = <-signals
 	log.Println("Terminating")
 	MaintenanceRoutines.TerminateAll()
 	_ = server.Shutdown(context.Background())
@@ -84,7 +87,12 @@ func networkWriter(signalChannel <-chan Void, args ...interface{}) {
 			break
 
 		case m = <-NetworkMessagesChannel:
-			_ = m.Conn.WriteJSON(m.Jsonable)
+			if m.IsControl {
+				err := m.Conn.WriteControl(websocket.PingMessage, []byte("PING"), time.Now().Add(time.Second*10))
+				m.ResultCh <- err
+			} else {
+				_ = m.Conn.WriteJSON(m.Jsonable)
+			}
 		}
 	}
 }

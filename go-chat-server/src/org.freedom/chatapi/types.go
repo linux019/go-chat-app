@@ -3,14 +3,14 @@ package chatapi
 import (
 	"github.com/gorilla/websocket"
 	"org.freedom/bootstrap"
-	"org.freedom/constants"
 	"sync"
 	"time"
 )
 
 type channel struct {
 	m             sync.RWMutex
-	IsPublic      bool
+	isPublic      bool
+	isSelf        bool
 	peers         []*User
 	messages      []channelMessageJSON
 	messagesMutex sync.RWMutex
@@ -32,27 +32,38 @@ type channels struct {
 	chs map[string]*channel
 }
 
-func (c *channels) Add(publicity bool, creator *User, name string) *channel {
+func (c *channels) Add(publicity bool, creator *User, name string, peers []string) *channel {
 	c.m.Lock()
 	defer c.m.Unlock()
-	ch := &channel{IsPublic: publicity}
+	ch, exist := c.chs[name]
+
+	if exist {
+		return ch
+	}
+
+	ch = &channel{
+		isPublic: publicity,
+		messages: make([]channelMessageJSON, 0, 0),
+	}
+
+	c.chs[name] = ch
 
 	if !publicity && creator == nil {
 		panic("Private channels must have owner")
 	}
 
 	if publicity {
-		users.m.Lock()
-		defer users.m.Unlock()
+		if creator != nil {
+			creator.AddPublicChannel(name)
+		}
 
 		for _, user := range users.users {
 			ch.AddPeer(user)
 		}
 	} else {
-		creator.AddPrivateChannels(name)
+		creator.AddPrivateChannel(name)
 	}
 
-	c.chs[name] = ch
 
 	return ch
 }
@@ -73,7 +84,8 @@ func (u *User) GetChannels() ChannelsJSON {
 
 	for name, channel := range u.channels {
 		result.Channels[name] = channelJSON{
-			IsPublic: channel.IsPublic,
+			IsPublic: channel.isPublic,
+			IsSelf:   channel.isSelf,
 		}
 	}
 	return result
@@ -82,6 +94,13 @@ func (u *User) GetChannels() ChannelsJSON {
 type usersList struct {
 	m     sync.RWMutex
 	users map[string]*User
+}
+
+func (ul *usersList) Get(name string) *User {
+	if ul.users == nil {
+		return nil
+	}
+	return ul.users[name]
 }
 
 func (ul *usersList) LoadStoreUser(name string) *User {
@@ -111,28 +130,58 @@ func (u *User) AddConn(conn *websocket.Conn) {
 	u.m.Unlock()
 }
 
-func (u *User) AddPublicChannels() {
-	allChannelsList.m.RLock()
-	defer allChannelsList.m.RUnlock()
-	for _, channelName := range constants.PublicChannels {
-		channel, ok := allChannelsList.chs[channelName]
-		if ok {
-			u.m.Lock()
+func (u *User) AddPublicChannel(channelName string) {
+	channel, ok := allChannelsList.chs[channelName]
+	if ok {
+		u.m.Lock()
+		_, exist := u.channels[channelName]
+		u.m.Unlock()
+
+		if !exist {
 			u.channels[channelName] = channel
-			u.m.Unlock()
 			channel.AddPeer(u)
 		}
 	}
 }
 
-func (u *User) AddPrivateChannels(name string) {
+func (u *User) AddPrivateChannel(name string) {
 	allChannelsList.m.Lock()
 	defer allChannelsList.m.Unlock()
+	channelName := u.name + ":" + name
+	ch, exists := allChannelsList.chs[channelName]
+	if !exists {
+		ch = &channel{
+			isPublic: false,
+		}
+		ch.AddPeer(u)
+		allChannelsList.chs[channelName] = ch
+		u.channels[name] = ch
+	}
+}
+
+func (u *User) AddSelfChannel() {
+	allChannelsList.m.Lock()
+	defer allChannelsList.m.Unlock()
+	u.m.RLock()
+	defer u.m.RUnlock()
+	for _, userChs := range u.channels {
+		if userChs.isSelf {
+			return
+		}
+	}
+	name := RandomString(32)
+	_, exists := allChannelsList.chs[name]
+
+	if exists {
+		return
+	}
+
 	ch := channel{
-		IsPublic: false,
+		isPublic: false,
+		isSelf:   true,
 	}
 	ch.AddPeer(u)
-	allChannelsList.chs[u.name+":"+name] = &ch
+	allChannelsList.chs[name] = &ch
 	u.channels[name] = &ch
 }
 
@@ -155,8 +204,9 @@ func (u *User) SendMessage(data interface{}) {
 	u.m.RLock()
 	for _, conn := range u.conns {
 		bootstrap.NetworkMessagesChannel <- bootstrap.NetworkMessage{
-			Conn:     conn,
-			Jsonable: data,
+			Conn:      conn,
+			IsControl: false,
+			Jsonable:  data,
 		}
 	}
 	u.m.RUnlock()
@@ -217,7 +267,11 @@ func (c *userSocketConnection) DispatchToAll(data interface{}) {
 	c.m.RLock()
 	defer c.m.RUnlock()
 	c.connMap.Range(func(conn, user interface{}) bool {
-		bootstrap.NetworkMessagesChannel <- bootstrap.NetworkMessage{Conn: conn.(*websocket.Conn), Jsonable: data}
+		bootstrap.NetworkMessagesChannel <- bootstrap.NetworkMessage{
+			Conn:      conn.(*websocket.Conn),
+			IsControl: false,
+			Jsonable:  data,
+		}
 		return true
 	})
 }
@@ -225,7 +279,7 @@ func (c *userSocketConnection) DispatchToAll(data interface{}) {
 func (ul *usersList) GetOnlineUsers() UsersJSON {
 	ul.m.RLock()
 	defer ul.m.RUnlock()
-	var users = UsersJSON{Users:make(map[string]userJSON)}
+	var users = UsersJSON{Users: make(map[string]userJSON)}
 	for name, user := range ul.users {
 		users.Users[name] = userJSON{Online: len(user.conns) > 0}
 	}
@@ -234,6 +288,7 @@ func (ul *usersList) GetOnlineUsers() UsersJSON {
 
 type channelJSON struct {
 	IsPublic bool `json:"isPublic"`
+	IsSelf   bool `json:"isSelf"`
 }
 
 type ChannelsJSON struct {
@@ -255,6 +310,11 @@ type channelMessageJSON struct {
 	Sender  string `json:"sender"`
 }
 
+type newChannelMessageJSON struct {
+	Message     channelMessageJSON `json:"message"`
+	ChannelName string             `json:"channelName"`
+}
+
 type userJSON struct {
 	Online bool `json:"online"`
 }
@@ -263,7 +323,7 @@ type UsersJSON struct {
 	Users map[string]userJSON `json:"users"`
 }
 
-func (c *channel) AppendMessage(text, sender string) *channelMessageJSON {
+func (c *channel) AppendMessage(text, sender string) channelMessageJSON {
 	var newMessage = channelMessageJSON{
 		Message: text,
 		Time:    time.Now().Unix(),
@@ -274,7 +334,7 @@ func (c *channel) AppendMessage(text, sender string) *channelMessageJSON {
 	defer c.messagesMutex.Unlock()
 
 	c.messages = append(c.messages, newMessage)
-	return &newMessage
+	return newMessage
 }
 
 func (c *channel) SendPeersChannelList() {
@@ -284,4 +344,10 @@ func (c *channel) SendPeersChannelList() {
 		channels := user.GetChannels()
 		user.SendMessage(&channels)
 	}
+}
+
+type clientChannelAttributes struct {
+	channelName string
+	isPublic    bool
+	peers       []string
 }

@@ -1,6 +1,8 @@
 import moment from 'moment';
 import React from 'react';
 import PropTypes from 'prop-types';
+import {DataContext} from './ChatApp';
+import {ChannelPublicIcon} from './items';
 
 class ChatDialogue extends React.Component {
     state = {
@@ -9,10 +11,7 @@ class ChatDialogue extends React.Component {
     };
 
     static propTypes = {
-        activeChannel: PropTypes.shape({
-            channel: PropTypes.string,
-            isPrivate: PropTypes.bool,
-        }).isRequired,
+        activeChannelId: PropTypes.string.isRequired,
         loadMessages: PropTypes.func.isRequired,
         setCallback: PropTypes.func.isRequired,
         sendUserMessage: PropTypes.func.isRequired,
@@ -24,7 +23,7 @@ class ChatDialogue extends React.Component {
     }
 
     storeMessages = ({messages, message, channelName}) => {
-        if (message && channelName === this.props.activeChannel.channel) {
+        if (message && channelName === this.props.activeChannelId) {
             messages = [...this.state.messages];
             messages.push(message);
         }
@@ -50,10 +49,27 @@ class ChatDialogue extends React.Component {
 
     render() {
         const {messages, text} = this.state;
+        const {activeChannelId} = this.props;
         return (
             <div className="dialogue">
                 <div className='chat'>
-                    <div className='chat-header'>{this.props.activeChannel.channel}</div>
+                    <DataContext.Consumer>
+                        {
+                            ({channels}) => {
+                                const {isSelf, isPublic} = channels[activeChannelId];
+                                return (
+                                    <div
+                                        className='chat-header'>
+                                        {
+                                            !isSelf && <ChannelPublicIcon isPublic={isPublic}/>
+                                        }
+                                        &nbsp;
+                                        {isSelf ? 'Save Your Messages Here' : activeChannelId}
+                                    </div>
+                                )
+                            }
+                        }
+                    </DataContext.Consumer>
                     <div className={'messages'}>
                         {
                             messages.length > 0

@@ -9,10 +9,9 @@ export const DataContext = React.createContext({});
 
 class ChatApp extends React.Component {
     state = {
-        activeChannel: null,
-        isPrivate: false,
+        activeChannelId: null,
         connected: false,
-        channels: [],
+        channels: {},
         users: {},
         unreadChannels: {},
     };
@@ -83,7 +82,7 @@ class ChatApp extends React.Component {
 
     getChannels = () => this.sendCommand('GET_CHANNELS', null);
     setName = () => this.sendCommand('SET_USERNAME', this.props.userName);
-    createChannel = (channel, isPrivate) => this.sendCommand('CREATE_CHANNEL', {channel, isPrivate});
+    createChannel = (channel, isPublic) => this.sendCommand('CREATE_CHANNEL', {channel, isPublic});
 
     sendCommand = (command, data) => {
         if (this.socket) {
@@ -94,7 +93,7 @@ class ChatApp extends React.Component {
 
     onServerData = data => {
         const newState = {};
-        const {activeChannel, unreadChannels} = this.state;
+        const {activeChannelId, unreadChannels} = this.state;
 
         const {channels, messages, message, channelName, users} = data;
 
@@ -104,19 +103,16 @@ class ChatApp extends React.Component {
 
         if (channels) {
             newState.channels = channels;
-            if (!activeChannel) {
-                newState.activeChannel = {
-                    channel: Object.keys(channels)[0],
-                    isPrivate: false
-                };
-            }
+            // if (!activeChannelId) {
+            //     newState.activeChannelId = Object.keys(channels)[0];
+            // }
         }
 
         if (this.dialogueCallback) {
             (messages || message) && this.dialogueCallback(data);
         }
 
-        if (message && activeChannel && channelName !== activeChannel.channel) {
+        if (message && activeChannelId && channelName !== activeChannelId) {
             newState.unreadChannels = {
                 ...unreadChannels,
                 ...{[channelName]: true}
@@ -140,13 +136,12 @@ class ChatApp extends React.Component {
         }
     }
 
-    setActiveChannel = (channel, isPrivate) => {
+    setActiveChannel = channel => {
         const unreadChannels = {...this.state.unreadChannels};
         delete unreadChannels[channel];
 
         this.setState({
-            activeChannel: {channel, isPrivate},
-            isPrivate,
+            activeChannelId: channel,
             unreadChannels
         });
     };
@@ -155,11 +150,14 @@ class ChatApp extends React.Component {
         this.dialogueCallback = callback;
     };
 
-    loadMessages = () => this.sendCommand('GET_CHANNEL_MESSAGES', this.state.activeChannel);
+    loadMessages = () => this.sendCommand('GET_CHANNEL_MESSAGES', {channel: this.state.activeChannelId});
     getUsersList = () => this.sendCommand('LIST_USERS', null);
 
     sendUserMessage = message => this.sendCommand('POST_MESSAGE', {
-        ...this.state.activeChannel,
+        ...{
+            channel: this.state.activeChannelId,
+            isPublic: true
+        },
         message
     });
 
@@ -168,15 +166,15 @@ class ChatApp extends React.Component {
         e.stopPropagation();
         const channel = window.prompt('Type a channel name');
         if (channel && channel.trim().length) {
-            this.createChannel(channel, false);
+            this.createChannel(channel, true);
         }
     };
 
     render() {
         const {userName} = this.props;
-        const {channels, connected, activeChannel, isPrivate, unreadChannels, users} = this.state;
+        const {channels, connected, activeChannelId, unreadChannels, users} = this.state;
         const contextData = {
-            userName, connected, channels, activeChannel, unreadChannels, users,
+            userName, connected, channels, activeChannelId, unreadChannels, users,
             askForChannelName: this.askForChannelName,
             setActiveChannel: this.setActiveChannel,
             getUsersList: this.getUsersList,
@@ -187,10 +185,9 @@ class ChatApp extends React.Component {
                 value={contextData}>
                 <Sidebar/>
                 {
-                    activeChannel &&
-                    <ChatDialogue key={Object.values(activeChannel).join()}
-                                  activeChannel={activeChannel}
-                                  isPrivate={isPrivate}
+                    activeChannelId && channels[activeChannelId] &&
+                    <ChatDialogue key={activeChannelId}
+                                  activeChannelId={activeChannelId}
                                   setCallback={this.setDialogueCallback}
                                   sendUserMessage={this.sendUserMessage}
                                   loadMessages={this.loadMessages}

@@ -53,11 +53,10 @@ export const WelcomeScreen = ({name, setData}) => (
 export const Sidebar = () => (
     <DataContext.Consumer>
         {
-            ({connected, getUsersList, askForChannelName, users, setActiveChannel}) => (
+            ({connected, getUsersList, askForChannelName}) => (
                 <div className='sidebar'>
                     <GitHubLink/>
                     <UserNameCard/>
-
                     {
                         connected &&
                         <a className="waves-effect waves-light btn-small new-channel"
@@ -69,10 +68,8 @@ export const Sidebar = () => (
                     }
 
                     <ChannelsList/>
-
                     {
-                        connected &&
-                        <UsersList {...{getUsersList, users, setActiveChannel}}/>
+                        connected && <UsersList getUsersList={getUsersList}/>
                     }
                 </div>
             )
@@ -101,19 +98,21 @@ const UserNameCard = () => (
 const ChannelsList = () => (
     <DataContext.Consumer>
         {
-            ({channels, unreadChannels, activeChannel, setActiveChannel}) =>
+            ({channels, unreadChannels, activeChannelId, setActiveChannel}) =>
                 <ul className="collection with-header">
                     <li className="collection-header"><h6>Channels</h6></li>
                     {
                         Object.keys(channels).map(
-                            ch =>
-                                <li key={ch}
-                                    onClick={e => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setActiveChannel(ch, false);
-                                    }}
-                                    className={classnames("collection-item", activeChannel && activeChannel.channel === ch && 'active')}>
+                            ch => channels[ch].isSelf
+                                ? null
+                                : <li key={ch}
+                                      onClick={e => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          setActiveChannel(ch);
+                                      }}
+                                      className={classnames("collection-item", activeChannelId === ch && 'active')}>
+                                    <ChannelPublicIcon isPublic={channels[ch].isPublic}/>&nbsp;
                                     {
                                         unreadChannels[ch] &&
                                         <i className="material-icons left tiny light-green-text message">message</i>
@@ -127,6 +126,7 @@ const ChannelsList = () => (
     </DataContext.Consumer>
 );
 
+export const ChannelPublicIcon = ({isPublic}) => <i className="material-icons tiny">{isPublic ? 'public' : 'lock'}</i>
 
 export const GitHubLink = () => (
     <a href="https://github.com/devbazilio/go-chat-app"

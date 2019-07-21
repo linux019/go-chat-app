@@ -1,11 +1,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import {DataContext} from './ChatApp';
 
 class UsersList extends React.Component {
     static propTypes = {
         getUsersList: PropTypes.func.isRequired,
-        setActiveChannel: PropTypes.func.isRequired,
-        users: PropTypes.object.isRequired,
     };
 
     componentDidMount() {
@@ -13,30 +12,37 @@ class UsersList extends React.Component {
     }
 
     render() {
-        const {users, setActiveChannel} = this.props;
         return (
-            <ul className="collection with-header users">
-                <li className="collection-header"><h6>Users</h6></li>
+            <DataContext.Consumer>
                 {
-                    Object.keys(users).map(
-                        name =>
-                            <li key={name}
-                                onClick={e => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setActiveChannel(name, true);
-                                }}
-                                className="collection-item">
-                                {
-                                    users[name].online
-                                        ? <i className="material-icons light-green-text">lens</i>
-                                        : <i className="material-icons grey-text">radio_button_unchecked</i>
-                                }
-                                {name}
-                            </li>
+                    ({users, setActiveChannel, userName}) => (
+                        <ul className="collection with-header users">
+                            <li className="collection-header"><h6>Users</h6></li>
+                            {
+                                Object.keys(users).map(
+                                    name =>
+                                        <li key={name}
+                                            onClick={e => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                setActiveChannel(name);
+                                            }}
+                                            className="collection-item">
+                                            {
+                                                users[name].online
+                                                    ? <i className="material-icons light-green-text">lens</i>
+                                                    : <i className="material-icons grey-text">radio_button_unchecked</i>
+                                            }
+                                            {name}
+                                            {name === userName ? ' (you)' : null}
+                                        </li>
+                                )
+                            }
+                        </ul>
                     )
                 }
-            </ul>
+
+            </DataContext.Consumer>
         )
     }
 }

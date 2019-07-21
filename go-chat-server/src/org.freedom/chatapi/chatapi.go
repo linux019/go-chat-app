@@ -1,6 +1,7 @@
 package chatapi
 
 import (
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
@@ -19,7 +20,7 @@ var allChannelsList = channels{
 
 func Setup() {
 	for _, channelName := range constants.PublicChannels {
-		allChannelsList.Add(true, nil, channelName)
+		allChannelsList.Add(true, nil, channelName, nil)
 	}
 
 	userSocketConnections.sendOnlineUsers = createDebouncedWriter(time.Millisecond*500,
@@ -51,6 +52,11 @@ func checkActiveConnections(signalChannel <-chan bootstrap.Void, args ...interfa
 	var usersListUpdated bool
 	timer := time.NewTimer(time.Second * 30)
 
+	networkControlMsg := bootstrap.NetworkMessage{
+		IsControl: true,
+		ResultCh:  make(chan error),
+	}
+
 	for {
 		select {
 		case <-signalChannel:
@@ -63,9 +69,11 @@ func checkActiveConnections(signalChannel <-chan bootstrap.Void, args ...interfa
 			userSocketConnections.connMap.Range(func(key, value interface{}) bool {
 				conn := key.(*websocket.Conn)
 				user := value.(*User)
+				networkControlMsg.Conn = conn
 
+				bootstrap.NetworkMessagesChannel <- networkControlMsg
+				err := <-networkControlMsg.ResultCh
 
-				err := conn.WriteControl(websocket.PingMessage, []byte("PING"), time.Now().Add(time.Second*10))
 				if err != nil {
 					_ = conn.Close()
 					userSocketConnections.connMap.Delete(key)
@@ -86,10 +94,16 @@ func checkActiveConnections(signalChannel <-chan bootstrap.Void, args ...interfa
 	}
 }
 
-func decodeChannelAttributes(data interface{}) (channelName string, err error) {
-	var channelData map[string]interface{}
-
+func decodeChannelAttributes(data interface{}) (attrs clientChannelAttributes, err error) {
+	var (
+		channelData map[string]interface{}
+		s           string
+		b           bool
+		peers       []string
+	)
 	err = errors.New("")
+
+	attrs.peers = make([]string, 0)
 
 	channelData, success := data.(map[string]interface{})
 
@@ -97,10 +111,25 @@ func decodeChannelAttributes(data interface{}) (channelName string, err error) {
 		return
 	}
 
-	channelName, success = channelData["channel"].(string)
-
+	s, success = channelData["channel"].(string)
 	if !success {
 		return
+	}
+	attrs.channelName = s
+
+	b, success = channelData["isPublic"].(bool)
+	if !success {
+		return
+	}
+	attrs.isPublic = b
+
+	peers, success = channelData["peers"].([]string)
+
+	if success {
+		if len(peers) == 0 {
+			return
+		}
+		attrs.peers = peers
 	}
 
 	err = nil
@@ -118,6 +147,7 @@ func decodeChannelAttributes(data interface{}) (channelName string, err error) {
 		}
 	}
 }
+*/
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
@@ -132,9 +162,8 @@ func RandomString(length int) string {
 		panic("Invalid size")
 	}
 
-	for c, index := range buf {
-		buf[index] = charset[c%lengthCharset]
+	for index, c := range buf {
+		buf[index] = charset[int(c)%lengthCharset]
 	}
 	return string(buf)
 }
-*/
