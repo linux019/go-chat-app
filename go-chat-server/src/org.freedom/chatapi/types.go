@@ -64,7 +64,6 @@ func (c *channels) Add(publicity bool, creator *User, name string, peers []strin
 		creator.AddPrivateChannel(name)
 	}
 
-
 	return ch
 }
 
@@ -289,6 +288,7 @@ func (ul *usersList) GetOnlineUsers() UsersJSON {
 type channelJSON struct {
 	IsPublic bool `json:"isPublic"`
 	IsSelf   bool `json:"isSelf"`
+	IsP2P    bool `json:"IsP2P"`
 }
 
 type ChannelsJSON struct {

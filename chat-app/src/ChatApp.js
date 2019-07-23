@@ -93,7 +93,7 @@ class ChatApp extends React.Component {
 
     onServerData = data => {
         const newState = {};
-        const {activeChannelId, unreadChannels} = this.state;
+        const {activeChannel, unreadChannels} = this.state;
 
         const {channels, messages, message, channelName, users} = data;
 
@@ -103,16 +103,13 @@ class ChatApp extends React.Component {
 
         if (channels) {
             newState.channels = channels;
-            // if (!activeChannelId) {
-            //     newState.activeChannelId = Object.keys(channels)[0];
-            // }
         }
 
         if (this.dialogueCallback) {
             (messages || message) && this.dialogueCallback(data);
         }
 
-        if (message && activeChannelId && channelName !== activeChannelId) {
+        if (message && activeChannel && channelName !== activeChannel.id) {
             newState.unreadChannels = {
                 ...unreadChannels,
                 ...{[channelName]: true}
@@ -136,12 +133,16 @@ class ChatApp extends React.Component {
         }
     }
 
-    setActiveChannel = channel => {
+    setActiveChannel = id => {
         const unreadChannels = {...this.state.unreadChannels};
-        delete unreadChannels[channel];
+        delete unreadChannels[id];
 
         this.setState({
-            activeChannelId: channel,
+            activeChannel: {
+                id,
+                isP2P: false,
+                peers: [],
+            },
             unreadChannels
         });
     };
@@ -150,13 +151,14 @@ class ChatApp extends React.Component {
         this.dialogueCallback = callback;
     };
 
-    loadMessages = () => this.sendCommand('GET_CHANNEL_MESSAGES', {channel: this.state.activeChannelId});
+    loadMessages = () => this.sendCommand('GET_CHANNEL_MESSAGES', {
+        channel: this.state.activeChannel.id,
+    });
     getUsersList = () => this.sendCommand('LIST_USERS', null);
 
     sendUserMessage = message => this.sendCommand('POST_MESSAGE', {
         ...{
-            channel: this.state.activeChannelId,
-            isPublic: true
+            channel: this.state.activeChannel.id,
         },
         message
     });
@@ -172,9 +174,9 @@ class ChatApp extends React.Component {
 
     render() {
         const {userName} = this.props;
-        const {channels, connected, activeChannelId, unreadChannels, users} = this.state;
+        const {channels, connected, activeChannel, unreadChannels, users} = this.state;
         const contextData = {
-            userName, connected, channels, activeChannelId, unreadChannels, users,
+            userName, connected, channels, activeChannel, unreadChannels, users,
             askForChannelName: this.askForChannelName,
             setActiveChannel: this.setActiveChannel,
             getUsersList: this.getUsersList,

@@ -103,7 +103,7 @@ const ChannelsList = () => (
                     <li className="collection-header"><h6>Channels</h6></li>
                     {
                         Object.keys(channels).map(
-                            ch => channels[ch].isSelf
+                            ch => (channels[ch].isSelf || !channels[ch].isP2P)
                                 ? null
                                 : <li key={ch}
                                       onClick={e => {
