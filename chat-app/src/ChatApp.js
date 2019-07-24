@@ -9,7 +9,7 @@ export const DataContext = React.createContext({});
 
 class ChatApp extends React.Component {
     state = {
-        activeChannelId: null,
+        activeChannel: null,
         connected: false,
         channels: {},
         users: {},
@@ -133,15 +133,15 @@ class ChatApp extends React.Component {
         }
     }
 
-    setActiveChannel = id => {
+    setActiveChannel = (id, isP2P, userName) => {
         const unreadChannels = {...this.state.unreadChannels};
         delete unreadChannels[id];
 
         this.setState({
             activeChannel: {
                 id,
-                isP2P: false,
-                peers: [],
+                isP2P,
+                peers: [userName],
             },
             unreadChannels
         });
@@ -151,9 +151,14 @@ class ChatApp extends React.Component {
         this.dialogueCallback = callback;
     };
 
-    loadMessages = () => this.sendCommand('GET_CHANNEL_MESSAGES', {
-        channel: this.state.activeChannel.id,
-    });
+    loadMessages = () => {
+        const {id: channel, isP2P, peers} = this.state;
+        this.sendCommand('GET_CHANNEL_MESSAGES', {
+            channel,
+            isP2P,
+            peers,
+        });
+    };
     getUsersList = () => this.sendCommand('LIST_USERS', null);
 
     sendUserMessage = message => this.sendCommand('POST_MESSAGE', {
@@ -187,9 +192,9 @@ class ChatApp extends React.Component {
                 value={contextData}>
                 <Sidebar/>
                 {
-                    activeChannelId && channels[activeChannelId] &&
-                    <ChatDialogue key={activeChannelId}
-                                  activeChannelId={activeChannelId}
+                    activeChannel && channels[activeChannel.id] &&
+                    <ChatDialogue key={activeChannel.id}
+                                  activeChannel={activeChannel}
                                   setCallback={this.setDialogueCallback}
                                   sendUserMessage={this.sendUserMessage}
                                   loadMessages={this.loadMessages}

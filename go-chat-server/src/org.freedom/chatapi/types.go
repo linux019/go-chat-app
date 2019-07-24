@@ -9,8 +9,10 @@ import (
 
 type channel struct {
 	m             sync.RWMutex
+	name          string
 	isPublic      bool
 	isSelf        bool
+	isP2P         bool
 	peers         []*User
 	messages      []channelMessageJSON
 	messagesMutex sync.RWMutex
@@ -27,12 +29,21 @@ func (c *channel) AddPeer(u *User) {
 	c.peers = append(c.peers, u)
 }
 
+func (c channel) HasPeer(user *User) bool {
+	for _, peer := range c.peers {
+		if peer == user {
+			return true
+		}
+	}
+	return false
+}
+
 type channels struct {
 	m   sync.RWMutex
 	chs map[string]*channel
 }
 
-func (c *channels) Add(publicity bool, creator *User, name string, peers []string) *channel {
+func (c *channels) Add(publicity bool, creator *User, name string) *channel {
 	c.m.Lock()
 	defer c.m.Unlock()
 	ch, exist := c.chs[name]
@@ -90,16 +101,32 @@ func (u *User) GetChannels() ChannelsJSON {
 	return result
 }
 
+func (u *User) FindOrCreateP2PChannel(peer string) (channelName *string, result bool) {
+	u.m.Lock()
+	defer u.m.Unlock()
+	user, ok := users.Get(peer)
+	if ok {
+		for channelName, channel := range u.channels {
+			if channel.isP2P && len(channel.peers) == 2 && channel.HasPeer(user) {
+				return &channelName, true
+			}
+		}
+		id := RandomString(32)
+		allChannelsList.Add(false, u, id)
+	}
+	return nil, false
+}
+
 type usersList struct {
 	m     sync.RWMutex
 	users map[string]*User
 }
 
-func (ul *usersList) Get(name string) *User {
+func (ul *usersList) Get(name string) (*User, bool) {
 	if ul.users == nil {
-		return nil
+		return nil, false
 	}
-	return ul.users[name]
+	return ul.users[name], true
 }
 
 func (ul *usersList) LoadStoreUser(name string) *User {
@@ -143,10 +170,9 @@ func (u *User) AddPublicChannel(channelName string) {
 	}
 }
 
-func (u *User) AddPrivateChannel(name string) {
+func (u *User) AddPrivateChannel(channelName string) {
 	allChannelsList.m.Lock()
 	defer allChannelsList.m.Unlock()
-	channelName := u.name + ":" + name
 	ch, exists := allChannelsList.chs[channelName]
 	if !exists {
 		ch = &channel{
@@ -154,7 +180,7 @@ func (u *User) AddPrivateChannel(name string) {
 		}
 		ch.AddPeer(u)
 		allChannelsList.chs[channelName] = ch
-		u.channels[name] = ch
+		u.channels[channelName] = ch
 	}
 }
 
@@ -286,9 +312,10 @@ func (ul *usersList) GetOnlineUsers() UsersJSON {
 }
 
 type channelJSON struct {
-	IsPublic bool `json:"isPublic"`
-	IsSelf   bool `json:"isSelf"`
-	IsP2P    bool `json:"IsP2P"`
+	IsPublic bool   `json:"isPublic"`
+	IsSelf   bool   `json:"isSelf"`
+	IsP2P    bool   `json:"isP2P"`
+	Peer     string `json:"peer"`
 }
 
 type ChannelsJSON struct {
@@ -349,5 +376,13 @@ func (c *channel) SendPeersChannelList() {
 type clientChannelAttributes struct {
 	channelName string
 	isPublic    bool
+	isP2P       bool
 	peers       []string
+}
+
+type newChannelAttributes struct {
+	name     string
+	isPublic bool
+	isP2P    bool
+	peers    []*User
 }

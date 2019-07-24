@@ -20,7 +20,10 @@ var allChannelsList = channels{
 
 func Setup() {
 	for _, channelName := range constants.PublicChannels {
-		allChannelsList.Add(true, nil, channelName, nil)
+		createChannelConnectPeers(newChannelAttributes{
+			name: channelName,
+			isPublic:true,
+		})
 	}
 
 	userSocketConnections.sendOnlineUsers = createDebouncedWriter(time.Millisecond*500,
@@ -123,6 +126,12 @@ func decodeChannelAttributes(data interface{}) (attrs clientChannelAttributes, e
 	}
 	attrs.isPublic = b
 
+	b, success = channelData["isP2P"].(bool)
+	if !success {
+		return
+	}
+	attrs.isP2P = b
+
 	peers, success = channelData["peers"].([]string)
 
 	if success {
@@ -134,6 +143,11 @@ func decodeChannelAttributes(data interface{}) (attrs clientChannelAttributes, e
 
 	err = nil
 	return
+}
+
+func createChannelConnectPeers(attr newChannelAttributes) {
+	//allChannelsList.Add(true, nil, channelName)
+
 }
 
 /*func debounceWritePacket(ch <-chan interface{}) {

@@ -11,7 +11,7 @@ class ChatDialogue extends React.Component {
     };
 
     static propTypes = {
-        activeChannelId: PropTypes.string.isRequired,
+        activeChannel: PropTypes.object.isRequired,
         loadMessages: PropTypes.func.isRequired,
         setCallback: PropTypes.func.isRequired,
         sendUserMessage: PropTypes.func.isRequired,
@@ -23,7 +23,7 @@ class ChatDialogue extends React.Component {
     }
 
     storeMessages = ({messages, message, channelName}) => {
-        if (message && channelName === this.props.activeChannelId) {
+        if (message && channelName === this.props.activeChannel.id) {
             messages = [...this.state.messages];
             messages.push(message);
         }
@@ -49,14 +49,14 @@ class ChatDialogue extends React.Component {
 
     render() {
         const {messages, text} = this.state;
-        const {activeChannelId} = this.props;
+        const {activeChannel: {id}} = this.props;
         return (
             <div className="dialogue">
                 <div className='chat'>
                     <DataContext.Consumer>
                         {
                             ({channels}) => {
-                                const {isSelf, isPublic} = channels[activeChannelId];
+                                const {isSelf, isPublic} = channels[id];
                                 return (
                                     <div
                                         className='chat-header'>
@@ -64,7 +64,7 @@ class ChatDialogue extends React.Component {
                                             !isSelf && <ChannelPublicIcon isPublic={isPublic}/>
                                         }
                                         &nbsp;
-                                        {isSelf ? 'Save Your Messages Here' : activeChannelId}
+                                        {isSelf ? 'Save Your Messages Here' : id}
                                     </div>
                                 )
                             }
