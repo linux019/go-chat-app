@@ -98,7 +98,7 @@ const UserNameCard = () => (
 const ChannelsList = () => (
     <DataContext.Consumer>
         {
-            ({channels, unreadChannels, activeChannel: {id}, setActiveChannel}) =>
+            ({channels, unreadChannels, activeChannel, setActiveChannel}) =>
                 <ul className="collection with-header">
                     <li className="collection-header"><h6>Channels</h6></li>
                     {
@@ -111,7 +111,7 @@ const ChannelsList = () => (
                                           e.stopPropagation();
                                           setActiveChannel(ch);
                                       }}
-                                      className={classnames("collection-item", id === ch && 'active')}>
+                                      className={classnames("collection-item", activeChannel && activeChannel.id === ch && 'active')}>
                                     <ChannelPublicIcon isPublic={channels[ch].isPublic}/>&nbsp;
                                     {
                                         unreadChannels[ch] &&

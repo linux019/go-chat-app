@@ -9,6 +9,7 @@ import (
 
 type channel struct {
 	m             sync.RWMutex
+	id            string
 	name          string
 	isPublic      bool
 	isSelf        bool
@@ -43,37 +44,21 @@ type channels struct {
 	chs map[string]*channel
 }
 
-func (c *channels) Add(publicity bool, creator *User, name string) *channel {
+func (c *channels) Add(attrs newChannelAttributes) *channel {
 	c.m.Lock()
 	defer c.m.Unlock()
-	ch, exist := c.chs[name]
+	id := RandomString(32)
 
-	if exist {
-		return ch
-	}
-
-	ch = &channel{
-		isPublic: publicity,
+	ch := &channel{
+		id:       id,
+		name:     attrs.name,
+		isPublic: attrs.isPublic,
+		isP2P:    attrs.isP2P,
+		isSelf:   attrs.isSelf,
 		messages: make([]channelMessageJSON, 0, 0),
 	}
 
-	c.chs[name] = ch
-
-	if !publicity && creator == nil {
-		panic("Private channels must have owner")
-	}
-
-	if publicity {
-		if creator != nil {
-			creator.AddPublicChannel(name)
-		}
-
-		for _, user := range users.users {
-			ch.AddPeer(user)
-		}
-	} else {
-		creator.AddPrivateChannel(name)
-	}
+	c.chs[id] = ch
 
 	return ch
 }
@@ -92,8 +77,9 @@ func (u *User) GetChannels() ChannelsJSON {
 		Channels: make(map[string]channelJSON),
 	}
 
-	for name, channel := range u.channels {
-		result.Channels[name] = channelJSON{
+	for id, channel := range u.channels {
+		result.Channels[id] = channelJSON{
+			Name:     channel.name,
 			IsPublic: channel.isPublic,
 			IsSelf:   channel.isSelf,
 		}
@@ -101,18 +87,23 @@ func (u *User) GetChannels() ChannelsJSON {
 	return result
 }
 
-func (u *User) FindOrCreateP2PChannel(peer string) (channelName *string, result bool) {
+func (u *User) FindOrCreateP2PChannel(peerName string) (channelId *string, result bool) {
 	u.m.Lock()
 	defer u.m.Unlock()
-	user, ok := users.Get(peer)
+	peer, ok := users.Get(peerName)
 	if ok {
-		for channelName, channel := range u.channels {
-			if channel.isP2P && len(channel.peers) == 2 && channel.HasPeer(user) {
-				return &channelName, true
+		for channelId, channel := range u.channels {
+			if channel.isP2P && len(channel.peers) == 2 && channel.HasPeer(peer) {
+				return &channelId, true
 			}
+
 		}
-		id := RandomString(32)
-		allChannelsList.Add(false, u, id)
+		ch := createChannelConnectPeers(newChannelAttributes{
+			isP2P:    true,
+			isPublic: false,
+			peers:    []*User{u, peer},
+		})
+		return &ch.id, true
 	}
 	return nil, false
 }
@@ -129,25 +120,24 @@ func (ul *usersList) Get(name string) (*User, bool) {
 	return ul.users[name], true
 }
 
-func (ul *usersList) LoadStoreUser(name string) *User {
+func (ul *usersList) LoadStoreUser(name string) (result *User, exists bool) {
 	ul.m.Lock()
 	defer ul.m.Unlock()
-	var result *User
 
 	if ul.users == nil {
 		ul.users = make(map[string]*User)
 	}
-	result, ok := ul.users[name]
 
-	if !ok {
+	result, exists = ul.users[name]
+
+	if !exists {
 		result = &User{
 			name:     name,
-			channels: make(map[string]*channel),
+			channels: make(map[string]*channel, 0),
 		}
 		ul.users[name] = result
 	}
-
-	return result
+	return
 }
 
 func (u *User) AddConn(conn *websocket.Conn) {
@@ -156,58 +146,16 @@ func (u *User) AddConn(conn *websocket.Conn) {
 	u.m.Unlock()
 }
 
-func (u *User) AddPublicChannel(channelName string) {
-	channel, ok := allChannelsList.chs[channelName]
-	if ok {
-		u.m.Lock()
-		_, exist := u.channels[channelName]
-		u.m.Unlock()
+func (u *User) ConnectChannel(ch *channel) {
+	u.m.Lock()
+	defer u.m.Unlock()
 
-		if !exist {
-			u.channels[channelName] = channel
-			channel.AddPeer(u)
-		}
-	}
-}
+	_, exists := u.channels[ch.id]
 
-func (u *User) AddPrivateChannel(channelName string) {
-	allChannelsList.m.Lock()
-	defer allChannelsList.m.Unlock()
-	ch, exists := allChannelsList.chs[channelName]
 	if !exists {
-		ch = &channel{
-			isPublic: false,
-		}
+		u.channels[ch.id] = ch
 		ch.AddPeer(u)
-		allChannelsList.chs[channelName] = ch
-		u.channels[channelName] = ch
 	}
-}
-
-func (u *User) AddSelfChannel() {
-	allChannelsList.m.Lock()
-	defer allChannelsList.m.Unlock()
-	u.m.RLock()
-	defer u.m.RUnlock()
-	for _, userChs := range u.channels {
-		if userChs.isSelf {
-			return
-		}
-	}
-	name := RandomString(32)
-	_, exists := allChannelsList.chs[name]
-
-	if exists {
-		return
-	}
-
-	ch := channel{
-		isPublic: false,
-		isSelf:   true,
-	}
-	ch.AddPeer(u)
-	allChannelsList.chs[name] = &ch
-	u.channels[name] = &ch
 }
 
 func (u *User) RemoveConn(conn *websocket.Conn) {
@@ -312,6 +260,7 @@ func (ul *usersList) GetOnlineUsers() UsersJSON {
 }
 
 type channelJSON struct {
+	Name     string `json:"name"`
 	IsPublic bool   `json:"isPublic"`
 	IsSelf   bool   `json:"isSelf"`
 	IsP2P    bool   `json:"isP2P"`
@@ -338,8 +287,8 @@ type channelMessageJSON struct {
 }
 
 type newChannelMessageJSON struct {
-	Message     channelMessageJSON `json:"message"`
-	ChannelName string             `json:"channelName"`
+	Message   channelMessageJSON `json:"message"`
+	ChannelId string             `json:"channelId"`
 }
 
 type userJSON struct {
@@ -374,6 +323,7 @@ func (c *channel) SendPeersChannelList() {
 }
 
 type clientChannelAttributes struct {
+	channelId   string
 	channelName string
 	isPublic    bool
 	isP2P       bool
@@ -384,5 +334,6 @@ type newChannelAttributes struct {
 	name     string
 	isPublic bool
 	isP2P    bool
+	isSelf   bool
 	peers    []*User
 }

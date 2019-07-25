@@ -18,11 +18,13 @@ var allChannelsList = channels{
 	chs: make(map[string]*channel),
 }
 
+var publicChannels = make([]*channel, len(constants.PublicChannels), len(constants.PublicChannels))
+
 func Setup() {
-	for _, channelName := range constants.PublicChannels {
-		createChannelConnectPeers(newChannelAttributes{
-			name: channelName,
-			isPublic:true,
+	for i, channelName := range constants.PublicChannels {
+		publicChannels[i] = createChannelConnectPeers(newChannelAttributes{
+			name:     channelName,
+			isPublic: true,
 		})
 	}
 
@@ -120,6 +122,12 @@ func decodeChannelAttributes(data interface{}) (attrs clientChannelAttributes, e
 	}
 	attrs.channelName = s
 
+	s, success = channelData["channelId"].(string)
+	if !success {
+		s = ""
+	}
+	attrs.channelId = s
+
 	b, success = channelData["isPublic"].(bool)
 	if !success {
 		return
@@ -145,9 +153,26 @@ func decodeChannelAttributes(data interface{}) (attrs clientChannelAttributes, e
 	return
 }
 
-func createChannelConnectPeers(attr newChannelAttributes) {
-	//allChannelsList.Add(true, nil, channelName)
+func createChannelConnectPeers(attrs newChannelAttributes) *channel {
+	if !attrs.isPublic && len(attrs.peers) == 0 {
+		panic("Private channels must have owner")
+	}
 
+	ch := allChannelsList.Add(attrs)
+
+	for _, user := range attrs.peers {
+		user.ConnectChannel(ch)
+		ch.AddPeer(user)
+	}
+
+	if attrs.isPublic {
+		for _, user := range users.users {
+			user.ConnectChannel(ch)
+			ch.AddPeer(user)
+		}
+	}
+
+	return ch
 }
 
 /*func debounceWritePacket(ch <-chan interface{}) {

@@ -3,19 +3,27 @@ package chatapi
 import (
 	"github.com/gorilla/websocket"
 	"org.freedom/bootstrap"
-	"org.freedom/constants"
 )
 
 var commandSetUserName bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
 	name, result := data.(string)
 	if result {
 		bootstrap.PendingConnections.RemoveConn(conn)
-		pUser := users.LoadStoreUser(name)
+		pUser, exists := users.LoadStoreUser(name)
 		pUser.AddConn(conn)
-		for _, channelName := range constants.PublicChannels {
-			pUser.AddPublicChannel(channelName)
+		for _, ch := range publicChannels {
+			pUser.ConnectChannel(ch)
 		}
-		pUser.AddSelfChannel()
+
+		if !exists {
+			createChannelConnectPeers(newChannelAttributes{
+				isSelf:   true,
+				isP2P:    false,
+				name:     "self",
+				isPublic: false,
+				peers:    []*User{pUser},
+			})
+		}
 		userSocketConnections.Store(conn, pUser)
 		userSocketConnections.sendOnlineUsers.Write(nil)
 	}
@@ -40,9 +48,8 @@ var commandListChannelMessages bootstrap.CommandListener = func(conn *websocket.
 				if len(channelData.peers) != 1 {
 					return nil
 				}
-				channelName = channelData.channelName
 				if channelName == "" {
-					channelName, ok = user.FindOrCreateP2PChannel(channelName)
+					//channelName, ok = user.FindOrCreateP2PChannel(channelName)
 				}
 			}
 			ch, ok := user.channels[channelData.channelName]
@@ -70,17 +77,17 @@ var commandStoreUserMessage bootstrap.CommandListener = func(conn *websocket.Con
 		return nil
 	}
 
-	channelName := channelData.channelName
+	channelId := channelData.channelId
 
 	message, exists := valueMap["message"]
 	user, ok := userSocketConnections.Get(conn)
-	if exists && ok && len(channelName) > 0 && len(message.(string)) > 0 {
-		ch, ok := user.channels[channelName]
+	if exists && ok && len(channelId) > 0 && len(message.(string)) > 0 {
+		ch, ok := user.channels[channelId]
 		if ok {
 			newMessage := ch.AppendMessage(message.(string), user.name)
 			go dispatchChannelMessage(ch, &newChannelMessageJSON{
-				Message:     newMessage,
-				ChannelName: channelName,
+				Message:   newMessage,
+				ChannelId: channelId,
 			})
 		}
 	}
@@ -99,17 +106,13 @@ func dispatchChannelMessage(ch *channel, message *newChannelMessageJSON) {
 var commandCreateChannel bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
 	channelData, err := decodeChannelAttributes(data)
 	user, ok := userSocketConnections.Get(conn)
+
 	if err == nil && ok {
-		ch := allChannelsList.Add(channelData.isPublic, user, channelData.channelName)
-		users.m.RLock()
-		defer users.m.RUnlock()
-		for _, user := range users.users {
-			if channelData.isPublic {
-				user.AddPublicChannel(channelData.channelName)
-			} else {
-				user.AddPrivateChannel(channelData.channelName)
-			}
-		}
+		ch := createChannelConnectPeers(newChannelAttributes{
+			isPublic: channelData.isPublic,
+			peers:    []*User{user},
+			name:     channelData.channelName,
+		})
 		go ch.SendPeersChannelList()
 	}
 
