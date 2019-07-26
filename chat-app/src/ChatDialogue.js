@@ -22,8 +22,8 @@ class ChatDialogue extends React.Component {
         this.props.loadMessages();
     }
 
-    storeMessages = ({messages, message, channelName}) => {
-        if (message && channelName === this.props.activeChannel.id) {
+    storeMessages = ({messages, message, channelId}) => {
+        if (message && channelId === this.props.activeChannel.id) {
             messages = [...this.state.messages];
             messages.push(message);
         }
@@ -56,17 +56,10 @@ class ChatDialogue extends React.Component {
                     <DataContext.Consumer>
                         {
                             ({channels}) => {
-                                const {isSelf, isPublic} = channels[id];
-                                return (
-                                    <div
-                                        className='chat-header'>
-                                        {
-                                            !isSelf && <ChannelPublicIcon isPublic={isPublic}/>
-                                        }
-                                        &nbsp;
-                                        {isSelf ? 'Save Your Messages Here' : id}
-                                    </div>
-                                )
+                                const channel = channels[id];
+                                return channel
+                                    ? <ChatHeader {...channel}/>
+                                    : <ChatHeader name='Loading...'/>;
                             }
                         }
                     </DataContext.Consumer>
@@ -90,6 +83,17 @@ class ChatDialogue extends React.Component {
     }
 }
 
+const ChatHeader = ({isSelf, isPublic, name}) => (
+    <div
+        className='chat-header'>
+        {
+            !isSelf && <ChannelPublicIcon isPublic={isPublic}/>
+        }
+        &nbsp;
+        {isSelf ? 'Save Your Messages Here' : name}
+    </div>
+);
+
 function dateFormat(unixtime) {
     const msgDate = new Date();
     msgDate.setTime(unixtime * 1000);
@@ -104,13 +108,13 @@ function dateFormat(unixtime) {
     return isSame ? momentDate.calendar(null, format) : momentDate.format('MMM D, YYYY h:mm A');
 }
 
-const ChatMessage = ({time, sender, message}) => (
+const ChatMessage = ({time, sender, text}) => (
     <div className='message'>
         <div className='header'>
             <span className='sender'>{sender}</span>
             <span className='time'>{dateFormat(time)}</span>
         </div>
-        <div className='text'>{message}</div>
+        <div className='text'>{text}</div>
     </div>
 );
 

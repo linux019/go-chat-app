@@ -40,7 +40,7 @@ var commandListChannels bootstrap.CommandListener = func(conn *websocket.Conn, d
 
 var commandListChannelMessages bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
 	var channelData, err = decodeChannelAttributes(data)
-	var channelName string
+	var channelId string
 	if err == nil {
 		user, ok := userSocketConnections.Get(conn)
 		if ok {
@@ -48,11 +48,11 @@ var commandListChannelMessages bootstrap.CommandListener = func(conn *websocket.
 				if len(channelData.peers) != 1 {
 					return nil
 				}
-				if channelName == "" {
+				if channelId == "" {
 					//channelName, ok = user.FindOrCreateP2PChannel(channelName)
 				}
 			}
-			ch, ok := user.channels[channelData.channelName]
+			ch, ok := user.channels[channelData.channelId]
 			if ok {
 				ch.m.RLock()
 				defer ch.m.RUnlock()

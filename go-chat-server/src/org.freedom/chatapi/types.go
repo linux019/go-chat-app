@@ -281,9 +281,9 @@ type messageJSON struct {
 }
 
 type channelMessageJSON struct {
-	Time    int64  `json:"time"`
-	Message string `json:"message"`
-	Sender  string `json:"sender"`
+	Time   int64  `json:"time"`
+	Text   string `json:"text"`
+	Sender string `json:"sender"`
 }
 
 type newChannelMessageJSON struct {
@@ -301,9 +301,9 @@ type UsersJSON struct {
 
 func (c *channel) AppendMessage(text, sender string) channelMessageJSON {
 	var newMessage = channelMessageJSON{
-		Message: text,
-		Time:    time.Now().Unix(),
-		Sender:  sender,
+		Text:   text,
+		Time:   time.Now().Unix(),
+		Sender: sender,
 	}
 
 	c.messagesMutex.Lock()

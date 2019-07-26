@@ -98,30 +98,40 @@ const UserNameCard = () => (
 const ChannelsList = () => (
     <DataContext.Consumer>
         {
-            ({channels, unreadChannels, activeChannel, setActiveChannel}) =>
+            ({channels}) =>
                 <ul className="collection with-header">
                     <li className="collection-header"><h6>Channels</h6></li>
                     {
                         Object.keys(channels).map(
-                            ch => (channels[ch].isSelf || !channels[ch].isP2P)
-                                ? null
-                                : <li key={ch}
-                                      onClick={e => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          setActiveChannel(ch);
-                                      }}
-                                      className={classnames("collection-item", activeChannel && activeChannel.id === ch && 'active')}>
-                                    <ChannelPublicIcon isPublic={channels[ch].isPublic}/>&nbsp;
-                                    {
-                                        unreadChannels[ch] &&
-                                        <i className="material-icons left tiny light-green-text message">message</i>
-                                    }
-                                    {ch}
-                                </li>
+                            id => (channels[id].isPublic)
+                                ? <PublicChannel key={id}
+                                                 id={id}
+                                                 {...channels[id]}
+                                />
+                                : null
                         )
                     }
                 </ul>
+        }
+    </DataContext.Consumer>
+);
+const PublicChannel = ({id, name, isPublic}) => (
+    <DataContext.Consumer>
+        {
+            ({unreadChannels, activeChannel, setActiveChannel}) =>
+                <li onClick={e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setActiveChannel(id, false, null);
+                }}
+                    className={classnames("collection-item", activeChannel && activeChannel.id === id && 'active')}>
+                    <ChannelPublicIcon isPublic={isPublic}/>&nbsp;
+                    {
+                        unreadChannels[id] &&
+                        <i className="material-icons left tiny light-green-text message">message</i>
+                    }
+                    {name}
+                </li>
         }
     </DataContext.Consumer>
 );

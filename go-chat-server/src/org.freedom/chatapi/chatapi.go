@@ -116,9 +116,9 @@ func decodeChannelAttributes(data interface{}) (attrs clientChannelAttributes, e
 		return
 	}
 
-	s, success = channelData["channel"].(string)
+	s, success = channelData["channelName"].(string)
 	if !success {
-		return
+		s = ""
 	}
 	attrs.channelName = s
 
@@ -130,13 +130,13 @@ func decodeChannelAttributes(data interface{}) (attrs clientChannelAttributes, e
 
 	b, success = channelData["isPublic"].(bool)
 	if !success {
-		return
+		b = false
 	}
 	attrs.isPublic = b
 
 	b, success = channelData["isP2P"].(bool)
 	if !success {
-		return
+		b = false
 	}
 	attrs.isP2P = b
 

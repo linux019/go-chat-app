@@ -82,7 +82,7 @@ class ChatApp extends React.Component {
 
     getChannels = () => this.sendCommand('GET_CHANNELS', null);
     setName = () => this.sendCommand('SET_USERNAME', this.props.userName);
-    createChannel = (channel, isPublic) => this.sendCommand('CREATE_CHANNEL', {channel, isPublic});
+    createChannel = (channelName, isPublic) => this.sendCommand('CREATE_CHANNEL', {channelName, isPublic});
 
     sendCommand = (command, data) => {
         if (this.socket) {
@@ -95,7 +95,7 @@ class ChatApp extends React.Component {
         const newState = {};
         const {activeChannel, unreadChannels} = this.state;
 
-        const {channels, messages, message, channelName, users} = data;
+        const {channels, messages, message, channelId, users} = data;
 
         if (!this.socket) {
             return;
@@ -109,10 +109,10 @@ class ChatApp extends React.Component {
             (messages || message) && this.dialogueCallback(data);
         }
 
-        if (message && activeChannel && channelName !== activeChannel.id) {
+        if (message && ((activeChannel && channelId !== activeChannel.id) || !activeChannel)) {
             newState.unreadChannels = {
                 ...unreadChannels,
-                ...{[channelName]: true}
+                ...{[channelId]: true}
             }
         }
 
@@ -141,7 +141,7 @@ class ChatApp extends React.Component {
             activeChannel: {
                 id,
                 isP2P,
-                peers: [userName],
+                peers: userName ? [userName] : [],
             },
             unreadChannels
         });
@@ -152,18 +152,21 @@ class ChatApp extends React.Component {
     };
 
     loadMessages = () => {
-        const {id: channel, isP2P, peers} = this.state;
-        this.sendCommand('GET_CHANNEL_MESSAGES', {
-            channel,
-            isP2P,
-            peers,
-        });
+        const {activeChannel} = this.state;
+        if (activeChannel) {
+            const {id: channelId, isP2P, peers} = activeChannel;
+            this.sendCommand('GET_CHANNEL_MESSAGES', {
+                channelId,
+                isP2P,
+                peers,
+            });
+        }
     };
     getUsersList = () => this.sendCommand('LIST_USERS', null);
 
     sendUserMessage = message => this.sendCommand('POST_MESSAGE', {
         ...{
-            channel: this.state.activeChannel.id,
+            channelId: this.state.activeChannel.id,
         },
         message
     });
@@ -192,7 +195,7 @@ class ChatApp extends React.Component {
                 value={contextData}>
                 <Sidebar/>
                 {
-                    activeChannel && channels[activeChannel.id] &&
+                    activeChannel /*&& channels[activeChannel.id]*/ &&
                     <ChatDialogue key={activeChannel.id}
                                   activeChannel={activeChannel}
                                   setCallback={this.setDialogueCallback}
