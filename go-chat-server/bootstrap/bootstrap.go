@@ -1,19 +1,17 @@
 package bootstrap
 
 import (
+	"chat-demo/go-chat-server/constants"
 	"context"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
-	"org.freedom/go-chat-server/constants"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 )
-
-//var OsSignal os.Signal = nil
 
 var mux = new(http.ServeMux)
 var NetworkMessagesChannel = make(chan NetworkMessage)

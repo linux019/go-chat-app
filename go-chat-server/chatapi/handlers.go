@@ -1,8 +1,8 @@
 package chatapi
 
 import (
+	"chat-demo/go-chat-server/bootstrap"
 	"github.com/gorilla/websocket"
-	"org.freedom/go-chat-server/bootstrap"
 )
 
 var commandSetUserName bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
@@ -18,7 +18,7 @@ var commandSetUserName bootstrap.CommandListener = func(conn *websocket.Conn, da
 		if !exists {
 			createChannelConnectPeers(newChannelAttributes{
 				isSelf:   true,
-				isP2P:    false,
+				isDM:    false,
 				name:     "self",
 				isPublic: false,
 				peers:    []*User{pUser},
@@ -49,7 +49,7 @@ var commandListChannelMessages bootstrap.CommandListener = func(conn *websocket.
 		channelId := channelData.channelId
 		user, ok = userSocketConnections.Get(conn)
 		if ok {
-			if channelData.isP2P {
+			if channelData.isDM {
 				if len(channelData.peers) != 1 {
 					return nil
 				}
@@ -57,15 +57,17 @@ var commandListChannelMessages bootstrap.CommandListener = func(conn *websocket.
 				_, ok = allChannelsList.Get(channelId)
 
 				if !ok {
-					ch, ok = user.FindOrCreateP2PChannel(channelData.peers[0])
+					ch, ok = user.FindOrCreateDMChannel(channelData.peers[0])
 				}
 			} else {
 				ch, ok = user.channels[channelId]
 			}
 
-			if ok {
+			if ok && ch != nil {
 				ch.m.RLock()
 				defer ch.m.RUnlock()
+				go ch.SendChannelsListToPeers()
+
 				return messagesJSON{
 					Messages: &ch.messages,
 				}
@@ -123,7 +125,7 @@ var commandCreateChannel bootstrap.CommandListener = func(conn *websocket.Conn, 
 			peers:    []*User{user},
 			name:     channelData.channelName,
 		})
-		go ch.SendPeersChannelList()
+		go ch.SendChannelsListToPeers()
 	}
 
 	return nil

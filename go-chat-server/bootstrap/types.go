@@ -1,11 +1,11 @@
 package bootstrap
 
 import (
+	"chat-demo/go-chat-server/constants"
 	"container/list"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"net/http"
-	"org.freedom/go-chat-server/constants"
 	"sync"
 	"sync/atomic"
 	"time"

@@ -20,23 +20,21 @@ type UserSocketConnections struct {
 }
 
 //func (c *connectionsByUser) AddUserConn(conn *websocket.Conn, pUser *User) {
-	//c.Mutex.Lock()
-	//defer c.Mutex.Unlock()
-	//conns, ok := c.SocketConnections[name]
-	//if ok {
-	//	conns.Mutex.Lock()
-	//	conns.Connections[conn] = connectionData{}
-	//	conns.Mutex.Unlock()
-	//} else {
-	//	conns = &UserSocketConnections{
-	//		Connections: make(ConnectionsMap),
-	//	}
-	//	conns.Connections[conn] = connectionData{}
-	//	c.SocketConnections[name] = conns
-	//}
+//c.Mutex.Lock()
+//defer c.Mutex.Unlock()
+//conns, ok := c.SocketConnections[name]
+//if ok {
+//	conns.Mutex.Lock()
+//	conns.Connections[conn] = connectionData{}
+//	conns.Mutex.Unlock()
+//} else {
+//	conns = &UserSocketConnections{
+//		Connections: make(ConnectionsMap),
+//	}
+//	conns.Connections[conn] = connectionData{}
+//	c.SocketConnections[name] = conns
 //}
-
-
+//}
 
 //type UserConnection struct {
 //	sync.Map
@@ -96,7 +94,11 @@ func readSocket(conn *websocket.Conn) {
 					if result {
 						response := cmdHandler(conn, commandData)
 						if response != nil {
-							_ = conn.WriteJSON(response)
+							NetworkMessagesChannel <- NetworkMessage{
+								Conn:      conn,
+								IsControl: false,
+								Jsonable:  response,
+							}
 						}
 					}
 				}

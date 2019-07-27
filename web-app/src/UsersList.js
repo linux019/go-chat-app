@@ -9,14 +9,13 @@ class UsersList extends React.Component {
 
     componentDidMount() {
         this.props.getUsersList();
-        // this.seed = Math.round(Math.random() * 1e6);
     }
 
     render() {
         return (
             <DataContext.Consumer>
                 {
-                    ({users, setActiveChannel, userName}) => (
+                    ({users, setActiveChannel, userName, DMChannels}) => (
                         <ul className="collection with-header users">
                             <li className="collection-header"><h6>Users</h6></li>
                             {
@@ -26,7 +25,7 @@ class UsersList extends React.Component {
                                             onClick={e => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
-                                                setActiveChannel(null, true, name);
+                                                setActiveChannel(DMChannels[userName] || null, true, name);
                                             }}
                                             className="collection-item">
                                             {
@@ -42,7 +41,6 @@ class UsersList extends React.Component {
                         </ul>
                     )
                 }
-
             </DataContext.Consumer>
         )
     }

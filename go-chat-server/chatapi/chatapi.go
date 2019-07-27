@@ -1,13 +1,13 @@
 package chatapi
 
 import (
+	"chat-demo/go-chat-server/bootstrap"
+	"chat-demo/go-chat-server/constants"
 	"crypto/rand"
 	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"net/http"
-	"org.freedom/go-chat-server/bootstrap"
-	"org.freedom/go-chat-server/constants"
 	"time"
 )
 
@@ -135,11 +135,11 @@ func decodeChannelAttributes(data interface{}) (attrs clientChannelAttributes, e
 	}
 	attrs.isPublic = b
 
-	b, success = channelData["isP2P"].(bool)
+	b, success = channelData["isDM"].(bool)
 	if !success {
 		b = false
 	}
-	attrs.isP2P = b
+	attrs.isDM = b
 
 	rawPeers, success = channelData["peers"].([]interface{})
 

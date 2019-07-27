@@ -1,8 +1,8 @@
 package chatapi
 
 import (
+	"chat-demo/go-chat-server/bootstrap"
 	"github.com/gorilla/websocket"
-	"org.freedom/go-chat-server/bootstrap"
 	"sync"
 	"time"
 )
@@ -13,7 +13,7 @@ type channel struct {
 	name          string
 	isPublic      bool
 	isSelf        bool
-	isP2P         bool
+	isDM          bool
 	peers         []*User
 	messages      []channelMessageJSON
 	messagesMutex sync.RWMutex
@@ -53,7 +53,7 @@ func (c *channels) Add(attrs newChannelAttributes) *channel {
 		id:       id,
 		name:     attrs.name,
 		isPublic: attrs.isPublic,
-		isP2P:    attrs.isP2P,
+		isDM:     attrs.isDM,
 		isSelf:   attrs.isSelf,
 		messages: make([]channelMessageJSON, 0, 0),
 	}
@@ -82,22 +82,31 @@ func (u *User) GetChannels() ChannelsJSON {
 		Channels: make(map[string]channelJSON),
 	}
 
+	var peers []string
+
 	for id, channel := range u.channels {
+		if channel.isDM {
+			peers = channel.GetPeers()
+		} else {
+			peers = nil
+		}
 		result.Channels[id] = channelJSON{
 			Name:     channel.name,
+			IsDM:     channel.isDM,
 			IsPublic: channel.isPublic,
 			IsSelf:   channel.isSelf,
+			Peers:    peers,
 		}
 	}
 	return result
 }
 
-func (u *User) FindOrCreateP2PChannel(peerName string) (ch *channel, result bool) {
+func (u *User) FindOrCreateDMChannel(peerName string) (ch *channel, result bool) {
 	peer, ok := users.Get(peerName)
 	if ok {
 		u.m.RLock()
 		for _, channel := range u.channels {
-			if channel.isP2P && len(channel.peers) == 2 && channel.HasPeer(peer) {
+			if channel.isDM && len(channel.peers) == 2 && channel.HasPeer(peer) {
 				u.m.RUnlock()
 				return channel, true
 			}
@@ -105,7 +114,7 @@ func (u *User) FindOrCreateP2PChannel(peerName string) (ch *channel, result bool
 		u.m.RUnlock()
 
 		ch := createChannelConnectPeers(newChannelAttributes{
-			isP2P:    true,
+			isDM:     true,
 			isPublic: false,
 			peers:    []*User{u, peer},
 		})
@@ -266,11 +275,11 @@ func (ul *usersList) GetOnlineUsers() UsersJSON {
 }
 
 type channelJSON struct {
-	Name     string `json:"name"`
-	IsPublic bool   `json:"isPublic"`
-	IsSelf   bool   `json:"isSelf"`
-	IsP2P    bool   `json:"isP2P"`
-	Peer     string `json:"peer"`
+	Name     string        `json:"name"`
+	IsPublic bool          `json:"isPublic"`
+	IsSelf   bool          `json:"isSelf"`
+	IsDM     bool          `json:"isDM"`
+	Peers    []     string `json:"peers"`
 }
 
 type ChannelsJSON struct {
@@ -319,7 +328,7 @@ func (c *channel) AppendMessage(text, sender string) channelMessageJSON {
 	return newMessage
 }
 
-func (c *channel) SendPeersChannelList() {
+func (c *channel) SendChannelsListToPeers() {
 	c.m.RLock()
 	defer c.m.RUnlock()
 	for _, user := range c.peers {
@@ -328,18 +337,28 @@ func (c *channel) SendPeersChannelList() {
 	}
 }
 
+func (c *channel) GetPeers() []string {
+	c.m.RLock()
+	defer c.m.RUnlock()
+	result := make([]string, len(c.peers))
+	for i, user := range c.peers {
+		result[i] = user.name
+	}
+	return result
+}
+
 type clientChannelAttributes struct {
 	channelId   string
 	channelName string
 	isPublic    bool
-	isP2P       bool
+	isDM        bool
 	peers       []string
 }
 
 type newChannelAttributes struct {
 	name     string
 	isPublic bool
-	isP2P    bool
+	isDM     bool
 	isSelf   bool
 	peers    []*User
 }

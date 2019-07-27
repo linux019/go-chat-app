@@ -12,7 +12,7 @@ class ChatApp extends React.Component {
         activeChannel: null,
         connected: false,
         channels: {},
-        p2pChannels: {},
+        DMChannels: {},
         users: {},
         unreadChannels: {},
     };
@@ -47,10 +47,10 @@ class ChatApp extends React.Component {
         };
 
         socket.onmessage = event => {
-            console.log('DATA', event.data);
             try {
                 const data = JSON.parse(event.data);
                 if (data) {
+                    console.log('DATA', data);
                     this.onServerData(data);
                 }
             } catch (e) {
@@ -104,7 +104,7 @@ class ChatApp extends React.Component {
 
         if (channels) {
             newState.channels = channels;
-            newState.p2pChannels = getP2PChannels(channels);
+            newState.DMChannels = getDMChannels(channels, this.props.userName);
         }
 
         if (this.dialogueCallback) {
@@ -135,18 +135,18 @@ class ChatApp extends React.Component {
         }
     }
 
-    setActiveChannel = (id, isP2P, userName) => {
+    setActiveChannel = (id, isDM, userName) => {
         const unreadChannels = {...this.state.unreadChannels};
         delete unreadChannels[id];
 
-        if (id === null && isP2P) {
+        if (id === null && isDM) {
             id = userName + ':' + Math.round(Math.random() * 1e6);
         }
 
         this.setState({
             activeChannel: {
                 id,
-                isP2P,
+                isDM,
                 peers: userName ? [userName] : [],
             },
             unreadChannels
@@ -160,11 +160,11 @@ class ChatApp extends React.Component {
     loadMessages = () => {
         const {activeChannel} = this.state;
         if (activeChannel) {
-            const {id: channelId, isP2P, peers} = activeChannel;
+            const {id: channelId, isDM, peers} = activeChannel;
 
             this.sendCommand('GET_CHANNEL_MESSAGES', {
                 channelId,
-                isP2P,
+                isDM,
                 peers,
             });
         }
@@ -189,7 +189,7 @@ class ChatApp extends React.Component {
 
     render() {
         const {userName} = this.props;
-        const {channels, connected, activeChannel, unreadChannels, users} = this.state;
+        const {channels, connected, activeChannel, unreadChannels, users, DMChannels} = this.state;
         const contextData = {
             userName, connected, channels, activeChannel, unreadChannels, users,
             askForChannelName: this.askForChannelName,
@@ -202,7 +202,7 @@ class ChatApp extends React.Component {
                 value={contextData}>
                 <Sidebar/>
                 {
-                    activeChannel /*&& channels[activeChannel.id]*/ &&
+                    activeChannel &&
                     <ChatDialogue key={activeChannel.id}
                                   activeChannel={activeChannel}
                                   setCallback={this.setDialogueCallback}
@@ -217,10 +217,16 @@ class ChatApp extends React.Component {
 
 export default ChatApp
 
-function getP2PChannels(channels) {
+function getDMChannels(channels, userName) {
     const result = {};
     Object.keys(channels).forEach(id => {
-        // if(c)
+        const {isDM, peers} = channels[id];
+        if (isDM && peers.length === 2) {
+            const offset = peers.indexOf(userName);
+            if (offset >= 0) {
+                result[peers[peers.length - 1 - offset]] = id;
+            }
+        }
     });
     return result;
 }

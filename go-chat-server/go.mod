@@ -1,4 +1,4 @@
-module org.freedom/go-chat-server
+module chat-demo/go-chat-server
 
 go 1.12
 
