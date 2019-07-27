@@ -2,7 +2,7 @@ package chatapi
 
 import (
 	"github.com/gorilla/websocket"
-	"org.freedom/bootstrap"
+	"org.freedom/go-chat-server/bootstrap"
 )
 
 var commandSetUserName bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
@@ -40,19 +40,29 @@ var commandListChannels bootstrap.CommandListener = func(conn *websocket.Conn, d
 
 var commandListChannelMessages bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
 	var channelData, err = decodeChannelAttributes(data)
-	var channelId string
+	var (
+		ok   bool
+		ch   *channel
+		user *User
+	)
 	if err == nil {
-		user, ok := userSocketConnections.Get(conn)
+		channelId := channelData.channelId
+		user, ok = userSocketConnections.Get(conn)
 		if ok {
 			if channelData.isP2P {
 				if len(channelData.peers) != 1 {
 					return nil
 				}
-				if channelId == "" {
-					//channelName, ok = user.FindOrCreateP2PChannel(channelName)
+
+				_, ok = allChannelsList.Get(channelId)
+
+				if !ok {
+					ch, ok = user.FindOrCreateP2PChannel(channelData.peers[0])
 				}
+			} else {
+				ch, ok = user.channels[channelId]
 			}
-			ch, ok := user.channels[channelData.channelId]
+
 			if ok {
 				ch.m.RLock()
 				defer ch.m.RUnlock()

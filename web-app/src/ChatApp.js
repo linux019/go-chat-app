@@ -12,6 +12,7 @@ class ChatApp extends React.Component {
         activeChannel: null,
         connected: false,
         channels: {},
+        p2pChannels: {},
         users: {},
         unreadChannels: {},
     };
@@ -103,6 +104,7 @@ class ChatApp extends React.Component {
 
         if (channels) {
             newState.channels = channels;
+            newState.p2pChannels = getP2PChannels(channels);
         }
 
         if (this.dialogueCallback) {
@@ -137,6 +139,10 @@ class ChatApp extends React.Component {
         const unreadChannels = {...this.state.unreadChannels};
         delete unreadChannels[id];
 
+        if (id === null && isP2P) {
+            id = userName + ':' + Math.round(Math.random() * 1e6);
+        }
+
         this.setState({
             activeChannel: {
                 id,
@@ -155,6 +161,7 @@ class ChatApp extends React.Component {
         const {activeChannel} = this.state;
         if (activeChannel) {
             const {id: channelId, isP2P, peers} = activeChannel;
+
             this.sendCommand('GET_CHANNEL_MESSAGES', {
                 channelId,
                 isP2P,
@@ -209,3 +216,11 @@ class ChatApp extends React.Component {
 }
 
 export default ChatApp
+
+function getP2PChannels(channels) {
+    const result = {};
+    Object.keys(channels).forEach(id => {
+        // if(c)
+    });
+    return result;
+}

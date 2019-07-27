@@ -6,7 +6,7 @@ import (
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
-	"org.freedom/constants"
+	"org.freedom/go-chat-server/constants"
 	"os"
 	"os/signal"
 	"syscall"

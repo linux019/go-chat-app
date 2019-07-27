@@ -2,7 +2,7 @@ package chatapi
 
 import (
 	"github.com/gorilla/websocket"
-	"org.freedom/bootstrap"
+	"org.freedom/go-chat-server/bootstrap"
 	"sync"
 	"time"
 )
@@ -63,6 +63,11 @@ func (c *channels) Add(attrs newChannelAttributes) *channel {
 	return ch
 }
 
+func (c channels) Get(channelId string) (ch *channel, ok bool) {
+	ch, ok = c.chs[channelId]
+	return
+}
+
 type User struct {
 	name     string
 	m        sync.RWMutex
@@ -87,23 +92,24 @@ func (u *User) GetChannels() ChannelsJSON {
 	return result
 }
 
-func (u *User) FindOrCreateP2PChannel(peerName string) (channelId *string, result bool) {
-	u.m.Lock()
-	defer u.m.Unlock()
+func (u *User) FindOrCreateP2PChannel(peerName string) (ch *channel, result bool) {
 	peer, ok := users.Get(peerName)
 	if ok {
-		for channelId, channel := range u.channels {
+		u.m.RLock()
+		for _, channel := range u.channels {
 			if channel.isP2P && len(channel.peers) == 2 && channel.HasPeer(peer) {
-				return &channelId, true
+				u.m.RUnlock()
+				return channel, true
 			}
-
 		}
+		u.m.RUnlock()
+
 		ch := createChannelConnectPeers(newChannelAttributes{
 			isP2P:    true,
 			isPublic: false,
 			peers:    []*User{u, peer},
 		})
-		return &ch.id, true
+		return ch, true
 	}
 	return nil, false
 }

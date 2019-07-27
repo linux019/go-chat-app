@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"net/http"
-	"org.freedom/bootstrap"
-	"org.freedom/constants"
+	"org.freedom/go-chat-server/bootstrap"
+	"org.freedom/go-chat-server/constants"
 	"time"
 )
 
@@ -104,6 +104,7 @@ func decodeChannelAttributes(data interface{}) (attrs clientChannelAttributes, e
 		channelData map[string]interface{}
 		s           string
 		b           bool
+		rawPeers    []interface{}
 		peers       []string
 	)
 	err = errors.New("")
@@ -140,11 +141,15 @@ func decodeChannelAttributes(data interface{}) (attrs clientChannelAttributes, e
 	}
 	attrs.isP2P = b
 
-	peers, success = channelData["peers"].([]string)
+	rawPeers, success = channelData["peers"].([]interface{})
 
 	if success {
-		if len(peers) == 0 {
-			return
+		peers = make([]string, len(rawPeers))
+		for i, v := range rawPeers {
+			s, success = v.(string)
+			if success {
+				peers[i] = s
+			}
 		}
 		attrs.peers = peers
 	}

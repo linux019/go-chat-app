@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"net/http"
-	"org.freedom/constants"
+	"org.freedom/go-chat-server/constants"
 	"sync"
 	"sync/atomic"
 	"time"

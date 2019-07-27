@@ -1,8 +1,8 @@
 package main
 
 import (
-	"org.freedom/bootstrap"
-	"org.freedom/chatapi"
+	"org.freedom/go-chat-server/bootstrap"
+	"org.freedom/go-chat-server/chatapi"
 )
 
 func main() {

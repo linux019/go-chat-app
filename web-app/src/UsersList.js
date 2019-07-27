@@ -9,7 +9,7 @@ class UsersList extends React.Component {
 
     componentDidMount() {
         this.props.getUsersList();
-        this.seed = Math.random() * 1e5;
+        // this.seed = Math.round(Math.random() * 1e6);
     }
 
     render() {
@@ -26,7 +26,7 @@ class UsersList extends React.Component {
                                             onClick={e => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
-                                                setActiveChannel(this.seed, true, name);
+                                                setActiveChannel(null, true, name);
                                             }}
                                             className="collection-item">
                                             {
