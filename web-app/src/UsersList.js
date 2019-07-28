@@ -15,7 +15,7 @@ class UsersList extends React.Component {
         return (
             <DataContext.Consumer>
                 {
-                    ({users, setActiveChannel, userName, DMChannels}) => (
+                    ({users, setActiveChannel, userName, DMChannels, unreadChannels}) => (
                         <ul className="collection with-header users">
                             <li className="collection-header"><h6>Users</h6></li>
                             {
@@ -25,7 +25,7 @@ class UsersList extends React.Component {
                                             onClick={e => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
-                                                setActiveChannel(DMChannels[userName] || null, true, name);
+                                                setActiveChannel(DMChannels[name] || null, true, name);
                                             }}
                                             className="collection-item">
                                             {
@@ -35,6 +35,10 @@ class UsersList extends React.Component {
                                             }
                                             {name}
                                             {name === userName ? ' (you)' : null}
+                                            {
+                                                unreadChannels[DMChannels[name]] &&
+                                                <i className="material-icons right tiny light-green-text message">message</i>
+                                            }
                                         </li>
                                 )
                             }

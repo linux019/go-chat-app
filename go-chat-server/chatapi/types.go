@@ -104,21 +104,23 @@ func (u *User) GetChannels() ChannelsJSON {
 func (u *User) FindOrCreateDMChannel(peerName string) (ch *channel, result bool) {
 	peer, ok := users.Get(peerName)
 	if ok {
-		u.m.RLock()
-		for _, channel := range u.channels {
-			if channel.isDM && len(channel.peers) == 2 && channel.HasPeer(peer) {
-				u.m.RUnlock()
-				return channel, true
-			}
-		}
-		u.m.RUnlock()
-
 		ch := createChannelConnectPeers(newChannelAttributes{
 			isDM:     true,
 			isPublic: false,
 			peers:    []*User{u, peer},
 		})
 		return ch, true
+	}
+	return nil, false
+}
+
+func (u *User) FindDMChannel(peer *User) (ch *channel, result bool) {
+	u.m.RLock()
+	defer u.m.RUnlock()
+	for _, channel := range u.channels {
+		if channel.isDM && len(channel.peers) == 2 && channel.HasPeer(peer) {
+			return channel, true
+		}
 	}
 	return nil, false
 }

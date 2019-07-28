@@ -55,10 +55,11 @@ class ChatDialogue extends React.Component {
                 <div className='chat'>
                     <DataContext.Consumer>
                         {
-                            ({channels}) => {
+                            ({channels, DMChannels}) => {
                                 const channel = channels[id];
+                                const DMChannelId = Object.values(DMChannels).find(chID => chID === id);
                                 return channel
-                                    ? <ChatHeader {...channel}/>
+                                    ? <ChatHeader {...channel} DMChannel={channels[DMChannelId]}/>
                                     : <ChatHeader name='Loading...'/>;
                             }
                         }
@@ -83,7 +84,7 @@ class ChatDialogue extends React.Component {
     }
 }
 
-const ChatHeader = ({isSelf, isPublic, name}) => (
+const ChatHeader = ({isSelf, isPublic, name, isDM, DMChannel}) => (
     <div
         className='chat-header'>
         {
@@ -91,6 +92,7 @@ const ChatHeader = ({isSelf, isPublic, name}) => (
         }
         &nbsp;
         {isSelf ? 'Save Your Messages Here' : name}
+        {isDM && DMChannel && DMChannel.peers.join(', ')}
     </div>
 );
 

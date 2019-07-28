@@ -95,6 +95,11 @@
           top: 50%;
           left: 10px;
           transform: translateY(-50%);
+          &.right {
+            position: static;
+            padding-top: 0;
+            transform: none
+          }
         }
       }
     }

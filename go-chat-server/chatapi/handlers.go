@@ -18,7 +18,7 @@ var commandSetUserName bootstrap.CommandListener = func(conn *websocket.Conn, da
 		if !exists {
 			createChannelConnectPeers(newChannelAttributes{
 				isSelf:   true,
-				isDM:    false,
+				isDM:     false,
 				name:     "self",
 				isPublic: false,
 				peers:    []*User{pUser},
@@ -41,9 +41,9 @@ var commandListChannels bootstrap.CommandListener = func(conn *websocket.Conn, d
 var commandListChannelMessages bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
 	var channelData, err = decodeChannelAttributes(data)
 	var (
-		ok   bool
-		ch   *channel
-		user *User
+		ok, exists bool
+		ch         *channel
+		user       *User
 	)
 	if err == nil {
 		channelId := channelData.channelId
@@ -54,20 +54,22 @@ var commandListChannelMessages bootstrap.CommandListener = func(conn *websocket.
 					return nil
 				}
 
-				_, ok = allChannelsList.Get(channelId)
-
-				if !ok {
+				ch, exists = allChannelsList.Get(channelId)
+				if !exists {
 					ch, ok = user.FindOrCreateDMChannel(channelData.peers[0])
+				} else {
+					ok = true
 				}
 			} else {
 				ch, ok = user.channels[channelId]
 			}
 
-			if ok && ch != nil {
+			if ok {
 				ch.m.RLock()
 				defer ch.m.RUnlock()
-				go ch.SendChannelsListToPeers()
-
+				if !exists {
+					go ch.SendChannelsListToPeers()
+				}
 				return messagesJSON{
 					Messages: &ch.messages,
 				}

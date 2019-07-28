@@ -105,6 +105,15 @@ class ChatApp extends React.Component {
         if (channels) {
             newState.channels = channels;
             newState.DMChannels = getDMChannels(channels, this.props.userName);
+            if (activeChannel) {
+                const DMChannelID = this.updateDMChannelID(newState);
+                if (DMChannelID) {
+                    newState.activeChannel = {
+                        ...activeChannel,
+                        ...{id: DMChannelID}
+                    };
+                }
+            }
         }
 
         if (this.dialogueCallback) {
@@ -124,6 +133,13 @@ class ChatApp extends React.Component {
 
         if (Object.keys(newState).length) {
             this.setState(newState);
+        }
+    };
+
+    updateDMChannelID = ({DMChannels}) => {
+        const {activeChannel: {isDM, id, peers}, channels} = this.state;
+        if (peers.length === 1 && isDM && !channels[id]) {
+            return DMChannels[peers[0]];
         }
     };
 
@@ -191,7 +207,7 @@ class ChatApp extends React.Component {
         const {userName} = this.props;
         const {channels, connected, activeChannel, unreadChannels, users, DMChannels} = this.state;
         const contextData = {
-            userName, connected, channels, activeChannel, unreadChannels, users,
+            userName, connected, channels, activeChannel, unreadChannels, users, DMChannels,
             askForChannelName: this.askForChannelName,
             setActiveChannel: this.setActiveChannel,
             getUsersList: this.getUsersList,
@@ -220,12 +236,15 @@ export default ChatApp
 function getDMChannels(channels, userName) {
     const result = {};
     Object.keys(channels).forEach(id => {
-        const {isDM, peers} = channels[id];
+        const {isDM, isSelf, peers} = channels[id];
         if (isDM && peers.length === 2) {
             const offset = peers.indexOf(userName);
             if (offset >= 0) {
                 result[peers[peers.length - 1 - offset]] = id;
             }
+        }
+        if (isSelf) {
+            result[userName] = id;
         }
     });
     return result;

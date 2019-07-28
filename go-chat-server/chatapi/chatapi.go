@@ -159,11 +159,34 @@ func decodeChannelAttributes(data interface{}) (attrs clientChannelAttributes, e
 }
 
 func createChannelConnectPeers(attrs newChannelAttributes) *channel {
+	var ch *channel
 	if !attrs.isPublic && len(attrs.peers) == 0 {
 		panic("Private channels must have owner")
 	}
 
-	ch := allChannelsList.Add(attrs)
+	if attrs.isDM && !attrs.isSelf {
+		if len(attrs.peers) != 2 {
+			panic("Invalid DM channel peers")
+		}
+		peer0, peer1 := attrs.peers[0], attrs.peers[1]
+		ch, ok := peer0.FindDMChannel(peer1)
+
+		if ok {
+			ch.AddPeer(peer1)
+			peer1.ConnectChannel(ch)
+			return ch
+		}
+
+		ch, ok = peer1.FindDMChannel(peer0)
+
+		if ok {
+			ch.AddPeer(peer0)
+			peer0.ConnectChannel(ch)
+			return ch
+		}
+	}
+
+	ch = allChannelsList.Add(attrs)
 
 	for _, user := range attrs.peers {
 		user.ConnectChannel(ch)

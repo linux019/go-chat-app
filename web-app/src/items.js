@@ -127,8 +127,7 @@ const PublicChannel = ({id, name, isPublic}) => (
                     className={classnames("collection-item", activeChannel && activeChannel.id === id && 'active')}>
                     <ChannelPublicIcon isPublic={isPublic}/>&nbsp;
                     {
-                        unreadChannels[id] &&
-                        <i className="material-icons left tiny light-green-text message">message</i>
+                        unreadChannels[id] && <UnreadMessagesIcon/>
                     }
                     {name}
                 </li>
@@ -136,7 +135,9 @@ const PublicChannel = ({id, name, isPublic}) => (
     </DataContext.Consumer>
 );
 
-export const ChannelPublicIcon = ({isPublic}) => <i className="material-icons tiny">{isPublic ? 'public' : 'lock'}</i>
+export const ChannelPublicIcon = ({isPublic}) => <i className="material-icons tiny">{isPublic ? 'public' : 'lock'}</i>;
+
+export const UnreadMessagesIcon = () => <i className="material-icons left tiny light-green-text message">message</i>;
 
 export const GitHubLink = () => (
     <a href="https://github.com/devbazilio/go-chat-app"
