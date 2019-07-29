@@ -19,44 +19,6 @@ type UserSocketConnections struct {
 	Connections ConnectionsMap
 }
 
-//func (c *connectionsByUser) AddUserConn(conn *websocket.Conn, pUser *User) {
-//c.Mutex.Lock()
-//defer c.Mutex.Unlock()
-//conns, ok := c.SocketConnections[name]
-//if ok {
-//	conns.Mutex.Lock()
-//	conns.Connections[conn] = connectionData{}
-//	conns.Mutex.Unlock()
-//} else {
-//	conns = &UserSocketConnections{
-//		Connections: make(ConnectionsMap),
-//	}
-//	conns.Connections[conn] = connectionData{}
-//	c.SocketConnections[name] = conns
-//}
-//}
-
-//type UserConnection struct {
-//	sync.Map
-//}
-//
-//func (uc *UserConnection) StoreConnection(conn *websocket.Conn, userName string) (name string, loaded bool) {
-//	v, loaded := uc.LoadOrStore(conn, userName)
-//	if loaded {
-//		name = v.(string)
-//	}
-//	return
-//}
-//
-//func (uc *UserConnection) LoadConnection(conn *websocket.Conn) (name string, ok bool) {
-//	v, ok := uc.Load(conn)
-//	if ok {
-//		name = v.(string)
-//	}
-//	return
-//}
-//
-//var UserConnections = UserConnection{}
 var serverCommandListeners = make(map[string]CommandListener)
 
 func AddCommandListener(command string, f CommandListener) {

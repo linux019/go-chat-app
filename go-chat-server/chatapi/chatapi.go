@@ -203,19 +203,6 @@ func createChannelConnectPeers(attrs newChannelAttributes) *channel {
 	return ch
 }
 
-/*func debounceWritePacket(ch <-chan interface{}) {
-	var data interface{}
-
-	for {
-		select {
-		case data = <-ch:
-		case <-time.After(time.Second):
-			break
-		}
-	}
-}
-*/
-
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 func RandomString(length int) string {
