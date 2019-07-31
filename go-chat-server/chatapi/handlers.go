@@ -62,6 +62,7 @@ var commandListChannelMessages bootstrap.CommandListener = func(conn *websocket.
 				}
 			} else {
 				ch, ok = user.channels[channelId]
+				exists = true
 			}
 
 			if ok {
