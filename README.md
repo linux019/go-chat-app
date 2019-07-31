@@ -1,16 +1,16 @@
-# Simple chat app on Golang and React and websockets
+# Simple chat app built with Golang, React and Websockets
 
 ## Features
 
 - Connection / disconnection of dead clients
 - Creation of own public channels
 - Direct messages
-- Multiple endpoints of single user
+- Indication of new messages
+- Multiple connections of one user
 - Online and offline status of users
 - Predefined list of public channels for all users
 - Public and private channels
-- Talk with yourself (Save your messages)
-- Notification of unread messages
+- Private storage (Save your messages)
 
 ## Installation
 
