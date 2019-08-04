@@ -102,8 +102,7 @@ func (u *User) GetChannels() ChannelsJSON {
 }
 
 func (u *User) FindOrCreateDMChannel(peerName string) (ch *channel, result bool) {
-	peer, ok := users.Get(peerName)
-	if ok {
+	if peer, ok := users.Get(peerName); ok {
 		ch := createChannelConnectPeers(newChannelAttributes{
 			isDM:     true,
 			isPublic: false,
@@ -145,9 +144,7 @@ func (ul *usersList) LoadStoreUser(name string) (result *User, exists bool) {
 		ul.users = make(map[string]*User)
 	}
 
-	result, exists = ul.users[name]
-
-	if !exists {
+	if result, exists = ul.users[name]; !exists {
 		result = &User{
 			name:     name,
 			channels: make(map[string]*channel, 0),
@@ -167,9 +164,7 @@ func (u *User) ConnectChannel(ch *channel) {
 	u.m.Lock()
 	defer u.m.Unlock()
 
-	_, exists := u.channels[ch.id]
-
-	if !exists {
+	if _, exists := u.channels[ch.id]; !exists {
 		u.channels[ch.id] = ch
 		ch.AddPeer(u)
 	}
@@ -246,8 +241,7 @@ func (c *userSocketConnection) Store(conn *websocket.Conn, user *User) {
 }
 
 func (c *userSocketConnection) Get(conn *websocket.Conn) (*User, bool) {
-	user, ok := c.connMap.Load(conn)
-	if ok {
+	if user, ok := c.connMap.Load(conn); ok {
 		return user.(*User), true
 	}
 	return nil, false

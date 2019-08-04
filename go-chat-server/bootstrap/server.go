@@ -35,8 +35,7 @@ func readSocket(conn *websocket.Conn) {
 
 		if (messageType == websocket.BinaryMessage || messageType == websocket.TextMessage) && data != nil {
 			var v interface{}
-			err := json.Unmarshal(data, &v)
-			if err == nil {
+			if json.Unmarshal(data, &v) == nil {
 				jsonMap, success := v.(map[string]interface{})
 				if jsonMap != nil && success {
 					command, result := jsonMap["command"]
@@ -52,8 +51,7 @@ func readSocket(conn *websocket.Conn) {
 						continue
 					}
 
-					cmdHandler, result := serverCommandListeners[stringCommand]
-					if result {
+					if cmdHandler, result := serverCommandListeners[stringCommand]; result {
 						response := cmdHandler(conn, commandData)
 						if response != nil {
 							NetworkMessagesChannel <- NetworkMessage{

@@ -117,33 +117,23 @@ func decodeChannelAttributes(data interface{}) (attrs clientChannelAttributes, e
 		return
 	}
 
-	s, success = channelData["channelName"].(string)
-	if !success {
-		s = ""
+	if s, success = channelData["channelName"].(string); success {
+		attrs.channelName = s
 	}
-	attrs.channelName = s
 
-	s, success = channelData["channelId"].(string)
-	if !success {
-		s = ""
+	if s, success = channelData["channelId"].(string); success {
+		attrs.channelId = s
 	}
-	attrs.channelId = s
 
-	b, success = channelData["isPublic"].(bool)
-	if !success {
-		b = false
+	if b, success = channelData["isPublic"].(bool); success {
+		attrs.isPublic = b
 	}
-	attrs.isPublic = b
 
-	b, success = channelData["isDM"].(bool)
-	if !success {
-		b = false
+	if b, success = channelData["isDM"].(bool); success {
+		attrs.isDM = b
 	}
-	attrs.isDM = b
 
-	rawPeers, success = channelData["peers"].([]interface{})
-
-	if success {
+	if rawPeers, success = channelData["peers"].([]interface{}); success {
 		peers = make([]string, len(rawPeers))
 		for i, v := range rawPeers {
 			s, success = v.(string)
@@ -169,17 +159,14 @@ func createChannelConnectPeers(attrs newChannelAttributes) *channel {
 			panic("Invalid DM channel peers")
 		}
 		peer0, peer1 := attrs.peers[0], attrs.peers[1]
-		ch, ok := peer0.FindDMChannel(peer1)
 
-		if ok {
+		if ch, ok := peer0.FindDMChannel(peer1); ok {
 			ch.AddPeer(peer1)
 			peer1.ConnectChannel(ch)
 			return ch
 		}
 
-		ch, ok = peer1.FindDMChannel(peer0)
-
-		if ok {
+		if ch, ok := peer1.FindDMChannel(peer0); ok {
 			ch.AddPeer(peer0)
 			peer0.ConnectChannel(ch)
 			return ch

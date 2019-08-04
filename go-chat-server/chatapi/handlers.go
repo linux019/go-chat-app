@@ -31,8 +31,7 @@ var commandSetUserName bootstrap.CommandListener = func(conn *websocket.Conn, da
 }
 
 var commandListChannels bootstrap.CommandListener = func(conn *websocket.Conn, data interface{}) interface{} {
-	user, ok := userSocketConnections.Get(conn)
-	if ok {
+	if user, ok := userSocketConnections.Get(conn); ok {
 		return user.GetChannels()
 	}
 	return nil
@@ -47,18 +46,17 @@ var commandListChannelMessages bootstrap.CommandListener = func(conn *websocket.
 	)
 	if err == nil {
 		channelId := channelData.channelId
-		user, ok = userSocketConnections.Get(conn)
-		if ok {
+
+		if user, ok = userSocketConnections.Get(conn); ok {
 			if channelData.isDM {
 				if len(channelData.peers) != 1 {
 					return nil
 				}
 
-				ch, exists = allChannelsList.Get(channelId)
-				if !exists {
-					ch, ok = user.FindOrCreateDMChannel(channelData.peers[0])
-				} else {
+				if ch, exists = allChannelsList.Get(channelId); exists {
 					ok = true
+				} else {
+					ch, ok = user.FindOrCreateDMChannel(channelData.peers[0])
 				}
 			} else {
 				ch, ok = user.channels[channelId]
@@ -96,8 +94,7 @@ var commandStoreUserMessage bootstrap.CommandListener = func(conn *websocket.Con
 	message, exists := valueMap["message"]
 	user, ok := userSocketConnections.Get(conn)
 	if exists && ok && len(channelId) > 0 && len(message.(string)) > 0 {
-		ch, ok := user.channels[channelId]
-		if ok {
+		if ch, ok := user.channels[channelId]; ok {
 			newMessage := ch.AppendMessage(message.(string), user.name)
 			go dispatchChannelMessage(ch, &newChannelMessageJSON{
 				Message:   newMessage,
