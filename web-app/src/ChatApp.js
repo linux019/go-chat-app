@@ -28,9 +28,11 @@ class ChatApp extends React.Component {
 
     componentDidMount() {
         this.openServerConnection();
+        document.title = `${this.props.userName} - Demo Chat`
     }
 
     openServerConnection = () => {
+        console.log('WS:', serverAddress);
         const socket = new WebSocket(serverAddress);
         socket.onopen = this.onConnectionOpen;
 

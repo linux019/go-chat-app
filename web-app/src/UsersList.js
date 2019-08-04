@@ -17,7 +17,7 @@ class UsersList extends React.Component {
                 {
                     ({users, setActiveChannel, userName, DMChannels, unreadChannels}) => (
                         <ul className="collection with-header users">
-                            <li className="collection-header"><h6>Users</h6></li>
+                            <li className="collection-header"><h6>Direct Messages</h6></li>
                             {
                                 Object.keys(users).map(
                                     name =>
