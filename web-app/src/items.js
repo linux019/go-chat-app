@@ -140,7 +140,7 @@ export const ChannelPublicIcon = ({isPublic}) => <i className="material-icons ti
 export const UnreadMessagesIcon = () => <i className="material-icons left tiny light-green-text message">message</i>;
 
 export const GitHubLink = () => (
-    <a href="https://github.com/devbazilio/go-chat-app"
+    <a href="https://github.com/linux019/go-chat-app"
        target="_blank"
        className='repo-logo'
        rel="noopener noreferrer">
